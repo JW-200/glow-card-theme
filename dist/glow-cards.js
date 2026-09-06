@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '16.0.0';
+  const VERSION = '17.0.0';
   const ACTIVE_STATES = new Set(['on', 'home', 'open', 'playing', 'active', 'true']);
 
   const escapeHtml = (value = '') => String(value).replace(/[&<>"']/g, (char) => ({
@@ -580,6 +580,437 @@
     }
   `;
 
+
+  const SECTIONS_CSS = `
+    :host {
+      height:100%;
+      min-height:0;
+    }
+
+    .card {
+      height:100% !important;
+      min-height:120px !important;
+      max-height:none !important;
+      grid-template-columns:64px minmax(0,1fr) auto !important;
+      grid-template-rows:1fr !important;
+      column-gap:14px !important;
+      row-gap:0 !important;
+      padding:14px 16px !important;
+      border-radius:22px !important;
+    }
+
+    /* Beat the legacy phone rules that used higher-specificity !important heights. */
+    .card:not(.thermostat-card) {
+      height:100% !important;
+      min-height:120px !important;
+      max-height:none !important;
+    }
+
+    .icon-shell {
+      width:60px !important;
+      height:60px !important;
+    }
+
+    .icon-shell ha-icon {
+      --mdc-icon-size:29px !important;
+      width:29px !important;
+      height:29px !important;
+    }
+
+    .name {
+      font-size:18px;
+      line-height:1.12;
+      letter-spacing:-.2px;
+    }
+
+    .state {
+      margin-top:4px;
+      font-size:14px;
+      line-height:1.15;
+    }
+
+    .subtext {
+      margin-top:5px;
+      font-size:12px;
+      line-height:1.15;
+    }
+
+    /* Keep interactive affordances finger-friendly without visually bloating them. */
+    button.control,
+    .battery-status,
+    .info-button,
+    .nav-action,
+    .temp-button {
+      min-width:40px;
+      min-height:40px;
+    }
+
+    .switch {
+      --w:68px;
+      --h:36px;
+      --knob:28px;
+      padding:4px;
+    }
+
+    .active .knob { transform:translateX(32px); }
+
+    /* Dimmable lights reserve a clean lower lane for the slider. */
+    .card:has(.slider-row) {
+      padding-bottom:36px !important;
+    }
+
+    .slider-row {
+      left:14px !important;
+      right:14px !important;
+      bottom:8px !important;
+      width:auto !important;
+      height:24px !important;
+    }
+
+    .slider-wrap,
+    input[type=range] {
+      height:24px !important;
+    }
+
+    .track,
+    input[type=range]::-webkit-slider-runnable-track,
+    input[type=range]::-moz-range-track {
+      height:6px !important;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      width:22px !important;
+      height:22px !important;
+      margin-top:-8px !important;
+      border-width:2px !important;
+    }
+
+    input[type=range]::-moz-range-thumb {
+      width:20px !important;
+      height:20px !important;
+      border-width:2px !important;
+    }
+
+    .percent { display:none !important; }
+
+    /* Person cards: use the same footprint as the standard icon treatment. */
+    .avatar {
+      width:60px !important;
+      height:60px !important;
+    }
+
+    .portrait,
+    .fallback {
+      width:56px !important;
+      height:56px !important;
+    }
+
+    .badge {
+      width:22px !important;
+      height:22px !important;
+      top:-1px !important;
+      right:-1px !important;
+    }
+
+    .badge ha-icon {
+      --mdc-icon-size:12px !important;
+      width:12px !important;
+      height:12px !important;
+    }
+
+    /* Thermostat is intentionally full-width by default and fits a 2-row cell. */
+    .thermostat-card {
+      min-height:120px !important;
+      grid-template-columns:48px minmax(0,1fr) !important;
+      grid-template-rows:auto auto !important;
+      row-gap:6px !important;
+      padding:10px 12px !important;
+    }
+
+    .thermostat-card .icon-shell {
+      width:44px !important;
+      height:44px !important;
+    }
+
+    .thermostat-card .icon-shell ha-icon {
+      --mdc-icon-size:23px !important;
+      width:23px !important;
+      height:23px !important;
+    }
+
+    .thermostat-card .name { font-size:16px; }
+    .current { margin-top:3px !important; font-size:11px !important; }
+
+    .thermostat-controls {
+      width:min(100%,286px) !important;
+      grid-template-columns:40px minmax(76px,1fr) 40px !important;
+      gap:8px !important;
+    }
+
+    .temp-button {
+      width:40px !important;
+      height:40px !important;
+    }
+
+    .temp-button ha-icon {
+      --mdc-icon-size:19px !important;
+      width:19px !important;
+      height:19px !important;
+    }
+
+    .target-display {
+      padding:6px 9px !important;
+      border-radius:10px !important;
+    }
+
+    .target { font-size:21px !important; letter-spacing:-.45px !important; }
+    .target-unit { font-size:11px !important; }
+
+    /* Standard section / phone width. */
+    @container (max-width:430px) {
+      .card {
+        grid-template-columns:48px minmax(0,1fr) auto !important;
+        column-gap:10px !important;
+        padding:10px 12px !important;
+        border-radius:18px !important;
+      }
+
+      .icon-shell {
+        width:44px !important;
+        height:44px !important;
+      }
+
+      .icon-shell ha-icon {
+        --mdc-icon-size:23px !important;
+        width:23px !important;
+        height:23px !important;
+      }
+
+      .card:not(.thermostat-card) .content .name,
+      .card:not(.thermostat-card) .content .state,
+      .card:not(.thermostat-card) .content .subtext,
+      .card:not(.thermostat-card) .content .sensor-label {
+        white-space:nowrap !important;
+        overflow:hidden !important;
+        text-overflow:ellipsis !important;
+        overflow-wrap:normal !important;
+        display:block !important;
+        -webkit-line-clamp:unset !important;
+        line-clamp:unset !important;
+      }
+
+      .name {
+        font-size:14.5px !important;
+        line-height:1.12 !important;
+        white-space:nowrap !important;
+        overflow:hidden !important;
+        text-overflow:ellipsis !important;
+        display:block !important;
+      }
+
+      .state {
+        margin-top:3px !important;
+        font-size:11.5px !important;
+        line-height:1.12 !important;
+        white-space:nowrap !important;
+        overflow:hidden !important;
+        text-overflow:ellipsis !important;
+        display:block !important;
+      }
+
+      .subtext,
+      .sensor-label {
+        margin-top:3px !important;
+        font-size:10.5px !important;
+        line-height:1.12 !important;
+        white-space:nowrap !important;
+        overflow:hidden !important;
+        text-overflow:ellipsis !important;
+        display:block !important;
+      }
+
+      .avatar {
+        width:46px !important;
+        height:46px !important;
+      }
+
+      .portrait,
+      .fallback {
+        width:42px !important;
+        height:42px !important;
+      }
+
+      .badge {
+        width:19px !important;
+        height:19px !important;
+        border-width:1.5px !important;
+      }
+
+      .battery-status,
+      .info-button,
+      .nav-action {
+        width:36px !important;
+        height:36px !important;
+        min-width:36px !important;
+        min-height:36px !important;
+      }
+
+      .navigation-card .subtext { font-size:10.5px !important; }
+
+      .card:has(.slider-row) {
+        padding-bottom:34px !important;
+      }
+
+      .slider-row {
+        left:12px !important;
+        right:12px !important;
+        bottom:7px !important;
+      }
+    }
+
+    /* Half-section cards: prioritize the primary information, then controls. */
+    @container (max-width:280px) {
+      .card:not(.thermostat-card) {
+        grid-template-columns:44px minmax(0,1fr) !important;
+        grid-template-rows:minmax(0,1fr) auto !important;
+        column-gap:8px !important;
+        row-gap:6px !important;
+        padding:9px 10px !important;
+        border-radius:16px !important;
+      }
+
+      .icon-shell,
+      .avatar {
+        grid-column:1 !important;
+        grid-row:1 !important;
+        align-self:center !important;
+        width:40px !important;
+        height:40px !important;
+      }
+
+      .icon-shell ha-icon {
+        --mdc-icon-size:21px !important;
+        width:21px !important;
+        height:21px !important;
+      }
+
+      .portrait,
+      .fallback {
+        width:38px !important;
+        height:38px !important;
+      }
+
+      .content {
+        grid-column:2 !important;
+        grid-row:1 !important;
+        align-self:center !important;
+        min-width:0 !important;
+      }
+
+      .name {
+        font-size:13.5px !important;
+        line-height:1.1 !important;
+      }
+
+      .state { font-size:10.5px !important; }
+      .subtext,
+      .sensor-label { font-size:9.5px !important; }
+
+      /* A basic toggle gets its own bottom lane instead of crushing the label. */
+      .light-card > button.control:not(.power-toggle) {
+        grid-column:1 / -1 !important;
+        grid-row:2 !important;
+        justify-self:end !important;
+        align-self:end !important;
+      }
+
+      .power-only .power-toggle {
+        display:block !important;
+        grid-column:1 / -1 !important;
+        grid-row:2 !important;
+        justify-self:end !important;
+        align-self:end !important;
+      }
+
+      .battery-status {
+        grid-column:1 / -1 !important;
+        grid-row:2 !important;
+        justify-self:end !important;
+        align-self:end !important;
+      }
+
+      /* These are redundant on narrow cards: tapping the whole card does the job. */
+      .sensor-card .info-button,
+      .navigation-card .nav-action {
+        display:none !important;
+      }
+
+      .sensor-card {
+        grid-template-rows:1fr !important;
+      }
+
+      .sensor-card .content {
+        grid-row:1 !important;
+      }
+
+      .reading { margin-top:2px !important; gap:3px !important; }
+      .value { font-size:23px !important; letter-spacing:-.45px !important; }
+      .unit { font-size:11px !important; }
+
+      /* Slider cards use the whole bottom edge as one large drag target. */
+      .card:has(.slider-row) {
+        grid-template-rows:1fr !important;
+        padding-bottom:32px !important;
+      }
+
+      .card:has(.slider-row) .slider-row {
+        left:10px !important;
+        right:10px !important;
+        bottom:6px !important;
+      }
+
+      .switch {
+        --w:58px;
+        --h:30px;
+        --knob:22px;
+        padding:4px;
+      }
+
+      .active .knob { transform:translateX(28px); }
+    }
+
+    /* Emergency narrow resize support. HA defaults prevent this in normal use. */
+    @container (max-width:180px) {
+      .card:not(.thermostat-card) {
+        grid-template-columns:38px minmax(0,1fr) !important;
+        column-gap:6px !important;
+        padding-inline:8px !important;
+      }
+
+      .icon-shell,
+      .avatar {
+        width:36px !important;
+        height:36px !important;
+      }
+
+      .portrait,
+      .fallback {
+        width:34px !important;
+        height:34px !important;
+      }
+
+      .name { font-size:12.5px !important; }
+      .state { font-size:10px !important; }
+      .subtext,
+      .sensor-label { display:none !important; }
+    }
+
+    @media (pointer:coarse) {
+      .card { cursor:default; }
+      .card:not(.unavailable):active:not(:has([data-control]:active)) { transform:none; }
+    }
+  `;
+
   class ReferenceCardBase extends HTMLElement {
     constructor() {
       super();
@@ -594,7 +1025,9 @@
     get hass() { return this._hass; }
 
     getCardSize() { return 2; }
-    getGridOptions() { return { columns:6, min_columns:4 }; }
+    getGridOptions() {
+      return { rows:2, columns:6, min_rows:2, min_columns:6 };
+    }
 
     entity(entityId = this.config?.entity) {
       return entityId ? this._hass?.states?.[entityId] : null;
@@ -748,6 +1181,7 @@
             }
           }
 
+          ${SECTIONS_CSS}
         </style>
         <div class="card glow light-card">
           <div class="icon-shell"><ha-icon class="main-icon"></ha-icon></div>
@@ -798,6 +1232,10 @@
   }
 
   class ReferenceBrightnessLightCard extends ReferenceCardBase {
+    getGridOptions() {
+      return { rows:2, columns:12, min_rows:2, min_columns:6 };
+    }
+
     constructor() {
       super();
       this._editing = false;
@@ -1604,6 +2042,7 @@
             }
           }
 
+          ${SECTIONS_CSS}
         </style>
 
         <div class="card glow light-card">
@@ -2114,6 +2553,7 @@
             }
           }
 
+          ${SECTIONS_CSS}
         </style>
         <div class="card glow">
           <div class="avatar"></div>
@@ -2411,6 +2851,7 @@
             }
           }
 
+          ${SECTIONS_CSS}
         </style>
 
         <div class="card glow sensor-card">
@@ -2527,6 +2968,10 @@
 
 
   class ReferenceThermostatCard extends ReferenceCardBase {
+    getGridOptions() {
+      return { rows:2, columns:12, min_rows:2, min_columns:6 };
+    }
+
     constructor() {
       super();
       this._draftTarget = null;
@@ -2754,6 +3199,7 @@
             }
             .target { font-size:16px; }
           }
+          ${SECTIONS_CSS}
         </style>
 
         <div class="card thermostat-card idle">
@@ -3277,6 +3723,7 @@
             }
           }
 
+          ${SECTIONS_CSS}
         </style>
         <div class="card glow navigation-card">
           <div class="icon-shell"><ha-icon class="main-icon"></ha-icon></div>
