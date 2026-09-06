@@ -1,0 +1,14 @@
+# Home Assistant runtime data
+dev/config/.storage/
+dev/config/.cache/
+dev/config/.cloud/
+dev/config/.HA_VERSION
+dev/config/.ha_run.lock
+dev/config/home-assistant.log*
+dev/config/home-assistant_v2.db*
+dev/config/image/
+dev/config/tts/
+
+# Local packaging preview output
+dev/cards-preview.png
+dev/config/.storage/core.config_entries.before-brightness-fix
