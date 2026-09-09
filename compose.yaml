@@ -1,0 +1,19 @@
+name: glow-cards-dev
+
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:2026.9.0
+    ports:
+      - "127.0.0.1:8123:8123"
+    environment:
+      TZ: Europe/Vienna
+    volumes:
+      - homeassistant-config:/config
+      - ./dev/home-assistant/configuration.yaml:/config/configuration.yaml:ro
+      - ./dev/home-assistant/glow-cards.yaml:/config/glow-cards.yaml:ro
+      - ./dist:/config/www/glow-cards:ro
+      - ./dev/live-reload.js:/config/www/glow-dev-reload.js:ro
+      - ./dev/home-assistant/glow-cards.yaml:/config/www/glow-dev-dashboard.yaml:ro
+
+volumes:
+  homeassistant-config:

@@ -9,6 +9,4 @@ dev/config/home-assistant_v2.db*
 dev/config/image/
 dev/config/tts/
 
-# Local packaging preview output
-dev/cards-preview.png
-dev/config/.storage/core.config_entries.before-brightness-fix
+dev/config

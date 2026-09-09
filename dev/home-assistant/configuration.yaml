@@ -1,0 +1,47 @@
+# Standard Home Assistant integrations and simulated devices; no hardware needed.
+default_config:
+demo:
+
+homeassistant:
+  name: Glow Cards Dev
+  latitude: 48.2082
+  longitude: 16.3738
+  elevation: 171
+  unit_system: metric
+  time_zone: Europe/Vienna
+  country: AT
+
+lovelace:
+  resource_mode: yaml
+  resources:
+    # Dev loader imports the actual cards and watches the mounted files.
+    - url: /local/glow-dev-reload.js
+      type: module
+  dashboards:
+    glow-cards:
+      mode: yaml
+      title: Glow Cards
+      icon: mdi:cards-outline
+      show_in_sidebar: true
+      filename: glow-cards.yaml
+
+person:
+  - name: Glow Demo
+    id: glow_demo
+    device_trackers:
+      - device_tracker.demo_home_boy
+
+input_boolean:
+  glow_sensor_active:
+    name: Sensor active highlight
+    initial: true
+
+input_number:
+  glow_battery:
+    name: Demo phone battery
+    min: 0
+    max: 100
+    step: 1
+    initial: 72
+    unit_of_measurement: "%"
+    icon: mdi:battery

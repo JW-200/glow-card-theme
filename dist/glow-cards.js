@@ -1,7 +1,11 @@
 (() => {
   'use strict';
 
-  const VERSION = '16.0.0';
+  const VERSION = '16.0.2';
+  const stylesheetUrl = new URL(`./glow-card.css?v=${VERSION}`, import.meta.url);
+  const devRevision = new URL(import.meta.url).searchParams.get('dev');
+  if (devRevision) stylesheetUrl.searchParams.set('dev', devRevision);
+  const GLOW_CARD_CSS_URL = stylesheetUrl.href;
   const ACTIVE_STATES = new Set(['on', 'home', 'open', 'playing', 'active', 'true']);
 
   const escapeHtml = (value = '') => String(value).replace(/[&<>"']/g, (char) => ({
@@ -18,7 +22,7 @@
       const text = source.trim();
       const hex = text.match(/^#?([0-9a-f]{6})$/i);
       if (hex) return [0,2,4].map((i) => parseInt(hex[1].slice(i,i+2),16)).join(',');
-      const parts = text.split(',').map((part) => Number(part.trim()));
+      const parts = text.replace(/^[\[(]|[\])]$/g, '').split(',').map((part) => Number(part.trim()));
       if (parts.length >= 3 && parts.slice(0,3).every(Number.isFinite)) {
         return parts.slice(0,3).map((part) => clamp(Math.round(part),0,255)).join(',');
       }
@@ -29,6 +33,8 @@
     const mapped = config?.state_colors && typeof config.state_colors === 'object' ? config.state_colors[stateKey] : null;
     return rgbTriplet(mapped ?? config?.[field], fallback);
   };
+  // HA publishes normalized rgb_color for its supported color modes.
+  const lightColor = (state) => state?.attributes?.rgb_color ?? [255,190,57];
   const setAccent = (card, rgb, rgb2 = rgb) => {
     if (!card) return;
     card.style.setProperty('--accent-rgb', rgb);
@@ -82,503 +88,6 @@
    * Wrapping/reflow only starts once the card is genuinely too narrow to fit controls.  This is where the previous version drifted furthest from
    * the reference: it was too tall, too round and inherited green accents.
    */
-  const BASE_CSS = `
-    :host {
-      display:block;
-      min-width:0;
-      container-type:inline-size;
-      color-scheme:dark;
-      -webkit-tap-highlight-color:transparent;
-      font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
-    *,*::before,*::after { box-sizing:border-box; }
-
-    .card {
-      --accent-rgb:255,190,57;
-      --accent2-rgb:115,151,255;
-      --accent:rgb(var(--accent-rgb));
-
-      position:relative;
-      isolation:isolate;
-      width:100%;
-      height:150px;
-      min-height:150px;
-      max-height:150px;
-      display:grid;
-      grid-template-columns:82px minmax(0,1fr) auto;
-      align-items:center;
-      column-gap:22px;
-      padding:22px 25px;
-      overflow:hidden;
-      border:1px solid rgba(190,211,235,.20);
-      border-radius:31px;
-      color:#f7f8fb;
-      background:
-        linear-gradient(135deg,rgba(255,255,255,.105) 0%,rgba(255,255,255,.028) 21%,transparent 39%),
-        radial-gradient(120% 155% at -14% 42%,rgba(var(--accent-rgb),.075),transparent 61%),
-        radial-gradient(92% 120% at 106% -10%,rgba(var(--accent2-rgb),.055),transparent 56%),
-        linear-gradient(133deg,rgba(31,43,57,.94) 0%,rgba(23,33,45,.95) 49%,rgba(13,20,29,.97) 100%);
-      -webkit-backdrop-filter:blur(18px) saturate(125%);
-      backdrop-filter:blur(18px) saturate(125%);
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.19),
-        inset 0 0 0 1px rgba(255,255,255,.018),
-        inset 0 -1px 0 rgba(0,0,0,.46),
-        0 10px 24px rgba(0,0,0,.38);
-      cursor:pointer;
-      user-select:none;
-      transform:translateZ(0);
-      transition:transform .20s cubic-bezier(.2,.8,.2,1),box-shadow .25s ease,filter .25s ease;
-    }
-
-    /* broad internal light bloom */
-    .card::before {
-      content:'';
-      position:absolute;
-      inset:0;
-      z-index:0;
-      pointer-events:none;
-      border-radius:inherit;
-      background:
-        radial-gradient(ellipse 78% 124% at -10% 58%,rgba(var(--accent-rgb),.14),transparent 69%),
-        radial-gradient(ellipse 64% 108% at 104% -4%,rgba(var(--accent2-rgb),.075),transparent 70%),
-        linear-gradient(116deg,rgba(255,255,255,.038),transparent 26% 74%,rgba(255,255,255,.012));
-      opacity:.50;
-    }
-
-    /* bright reference-style perimeter */
-    .card::after {
-      content:'';
-      position:absolute;
-      inset:0;
-      z-index:20;
-      pointer-events:none;
-      border-radius:inherit;
-      padding:1.35px;
-      background:linear-gradient(
-        108deg,
-        rgba(var(--accent-rgb),.98) 0%,
-        rgba(var(--accent-rgb),.78) 27%,
-        rgba(255,255,255,.24) 55%,
-        rgba(var(--accent2-rgb),.80) 100%
-      );
-      -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
-      -webkit-mask-composite:xor;
-      mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
-      mask-composite:exclude;
-      filter:
-        drop-shadow(0 0 2px rgba(var(--accent-rgb),.72))
-        drop-shadow(0 0 7px rgba(var(--accent-rgb),.28));
-    }
-
-    .card.glow {
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.18),
-        inset 0 -1px 0 rgba(0,0,0,.46),
-        inset 18px 0 48px rgba(var(--accent-rgb),.025),
-        0 0 12px rgba(var(--accent-rgb),.28),
-        0 0 28px rgba(var(--accent-rgb),.14),
-        0 12px 28px rgba(0,0,0,.42);
-    }
-
-    .card.unavailable { opacity:.52; filter:saturate(.5); cursor:default; }
-
-    @media (hover:hover) {
-      .card:not(.unavailable):hover {
-        transform:translateY(-2px);
-        box-shadow:
-          inset 0 1px 0 rgba(255,255,255,.20),
-          inset 18px 0 50px rgba(var(--accent-rgb),.035),
-          0 0 16px rgba(var(--accent-rgb),.33),
-          0 0 34px rgba(var(--accent-rgb),.16),
-          0 16px 31px rgba(0,0,0,.45);
-      }
-    }
-
-    .card:not(.unavailable):active:not(:has([data-control]:active)) { transform:scale(.995); }
-    .card:focus-visible { outline:2px solid rgba(var(--accent-rgb),.95); outline-offset:3px; }
-
-    .icon-shell {
-      position:relative;
-      z-index:2;
-      width:82px;
-      height:82px;
-      display:grid;
-      place-items:center;
-      border-radius:50%;
-      color:rgb(var(--accent-rgb));
-      border:1px solid rgba(var(--accent-rgb),.38);
-      background:
-        radial-gradient(circle at 30% 22%,rgba(255,255,255,.19),rgba(255,255,255,.050) 27%,transparent 46%),
-        radial-gradient(circle at 52% 74%,rgba(var(--accent-rgb),.105),transparent 70%),
-        linear-gradient(145deg,rgba(42,52,64,.90),rgba(27,35,45,.94) 68%,rgba(18,25,33,.96));
-      -webkit-backdrop-filter:blur(10px);
-      backdrop-filter:blur(10px);
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.15),
-        inset 0 0 0 1px rgba(255,255,255,.015),
-        0 0 0 1px rgba(var(--accent-rgb),.045),
-        0 0 12px rgba(var(--accent-rgb),.11),
-        0 7px 18px rgba(0,0,0,.30);
-    }
-
-    .icon-shell ha-icon {
-      --mdc-icon-size:36px;
-      width:36px;
-      height:36px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      place-self:center;
-      margin:0;
-      padding:0;
-      line-height:0;
-      transform:translate(0,0);
-      filter:
-        drop-shadow(0 1px 2px rgba(0,0,0,.42))
-        drop-shadow(0 0 7px rgba(var(--accent-rgb),.30));
-    }
-
-    .badge ha-icon,.battery-status ha-icon,.info-button ha-icon,.temp-button ha-icon,.nav-action ha-icon {
-      display:flex !important;
-      align-items:center !important;
-      justify-content:center !important;
-      place-self:center !important;
-      margin:0 !important;
-      padding:0 !important;
-      line-height:0 !important;
-    }
-
-    .content { position:relative; z-index:2; min-width:0; }
-
-    .name {
-      min-width:0;
-      overflow:hidden;
-      white-space:nowrap;
-      text-overflow:ellipsis;
-      color:#fbfbfc;
-      font-size:21px;
-      line-height:1.14;
-      font-weight:760;
-      letter-spacing:-.28px;
-      text-shadow:0 1px 3px rgba(0,0,0,.34);
-    }
-
-    .state {
-      min-width:0;
-      margin-top:6px;
-      overflow:hidden;
-      white-space:nowrap;
-      text-overflow:ellipsis;
-      color:#c4c8d0;
-      font-size:17px;
-      line-height:1.18;
-      font-weight:440;
-    }
-
-    .subtext {
-      min-width:0;
-      margin-top:8px;
-      overflow:hidden;
-      white-space:nowrap;
-      text-overflow:ellipsis;
-      color:#929aa7;
-      font-size:14px;
-      line-height:1.15;
-      font-weight:430;
-    }
-
-    .chevron {
-      position:relative;
-      z-index:3;
-      display:grid;
-      place-items:center;
-      width:30px;
-      height:38px;
-      color:#dbe0e8;
-      opacity:.88;
-      filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));
-    }
-    .chevron ha-icon { --mdc-icon-size:31px; }
-
-    button.control {
-      position:relative;
-      z-index:6;
-      margin:0;
-      padding:0;
-      border:0;
-      background:transparent;
-      color:inherit;
-      font:inherit;
-      cursor:pointer;
-    }
-    button.control:focus-visible { outline:2px solid var(--accent); outline-offset:4px; border-radius:999px; }
-    button.control:disabled { cursor:default; }
-
-    .switch {
-      --w:88px;
-      --h:46px;
-      --knob:36px;
-      position:relative;
-      display:block;
-      width:var(--w);
-      height:var(--h);
-      padding:5px;
-      overflow:hidden;
-      border-radius:999px;
-      border:1px solid rgba(var(--accent-rgb),.72);
-      background:
-        linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.01)),
-        rgba(18,22,29,.94);
-      box-shadow:
-        inset 0 2px 5px rgba(0,0,0,.48),
-        0 0 0 1px rgba(var(--accent-rgb),.04),
-        0 3px 10px rgba(0,0,0,.28);
-    }
-
-    .switch::before {
-      content:'';
-      position:absolute;
-      inset:0;
-      border-radius:inherit;
-      background:
-        radial-gradient(circle at 72% 34%,rgba(255,255,255,.38),transparent 24%),
-        linear-gradient(105deg,rgba(var(--accent-rgb),.98),rgba(var(--accent-rgb),.62));
-      opacity:0;
-      transition:opacity .20s ease;
-    }
-
-    .knob {
-      position:relative;
-      z-index:2;
-      display:block;
-      width:var(--knob);
-      height:var(--knob);
-      border-radius:50%;
-      background:radial-gradient(circle at 34% 28%,#fff 0 28%,#eef3f8 54%,#d3dce6 100%);
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.96),
-        0 0 0 1px rgba(255,255,255,.13),
-        0 4px 10px rgba(0,0,0,.44);
-      transform:translateX(0);
-      transition:transform .24s cubic-bezier(.2,.85,.2,1),box-shadow .20s ease;
-    }
-
-    .active .switch::before { opacity:1; }
-    .active .switch {
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.30),
-        0 0 8px rgba(var(--accent-rgb),.56),
-        0 0 20px rgba(var(--accent-rgb),.23),
-        0 4px 10px rgba(0,0,0,.28);
-    }
-    .active .knob {
-      transform:translateX(42px);
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.98),
-        0 0 9px rgba(255,255,255,.72),
-        0 0 18px rgba(var(--accent-rgb),.35),
-        0 4px 10px rgba(0,0,0,.35);
-    }
-
-    /*
-     * Light cards have a real OFF visual state.
-     * Earlier versions always rendered the amber perimeter/icon glow even when
-     * Home Assistant reported off, which made the card look powered on.
-     */
-    .light-card.active {
-      background:
-        linear-gradient(135deg,rgba(255,255,255,.115),rgba(255,255,255,.032) 25%,transparent 43%),
-        linear-gradient(90deg,rgba(var(--accent-rgb),.18) 0%,rgba(var(--accent-rgb),.14) 28%,rgba(var(--accent-rgb),.085) 55%,rgba(var(--accent-rgb),.040) 78%,rgba(var(--accent-rgb),.012) 94%,transparent 100%),
-        radial-gradient(138% 172% at -16% 48%,rgba(var(--accent-rgb),.17),transparent 76%),
-        radial-gradient(94% 122% at 106% 2%,rgba(var(--accent-rgb),.055),transparent 66%),
-        linear-gradient(133deg,rgba(49,45,38,.94) 0%,rgba(38,38,37,.95) 49%,rgba(18,24,31,.97) 100%) !important;
-      -webkit-backdrop-filter:blur(18px) saturate(120%);
-      backdrop-filter:blur(18px) saturate(120%);
-    }
-    .light-card.active::before { opacity:.58; }
-    .light-card.active .icon-shell {
-      color:rgb(var(--accent-rgb));
-      border-color:rgba(var(--accent-rgb),.62);
-      background:
-        radial-gradient(circle at 31% 23%,rgba(255,255,255,.25),rgba(255,255,255,.07) 25%,transparent 43%),
-        radial-gradient(circle at 50% 58%,rgba(var(--accent-rgb),.25),rgba(var(--accent-rgb),.095) 50%,transparent 74%),
-        linear-gradient(145deg,#403728,#282b2d 67%,#171e25);
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.18),
-        0 0 0 1px rgba(var(--accent-rgb),.15),
-        0 0 15px rgba(var(--accent-rgb),.34),
-        0 0 28px rgba(var(--accent-rgb),.13),
-        0 7px 18px rgba(0,0,0,.30);
-    }
-    .light-card.active .icon-shell ha-icon {
-      filter:drop-shadow(0 1px 2px rgba(0,0,0,.42)) drop-shadow(0 0 9px rgba(var(--accent-rgb),.55));
-    }
-
-    .light-card:not(.active) {
-      border-color:rgba(128,145,166,.20);
-      background:
-        linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.008) 30%,transparent 48%),
-        radial-gradient(95% 125% at 108% -8%,rgba(88,117,156,.055),transparent 54%),
-        linear-gradient(133deg,#20262d 0%,#171d24 50%,#10161d 100%) !important;
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.075),
-        inset 0 -1px 0 rgba(0,0,0,.52),
-        0 9px 22px rgba(0,0,0,.36) !important;
-    }
-    .light-card:not(.active)::before { opacity:.12; }
-    .light-card:not(.active)::after {
-      background:linear-gradient(108deg,rgba(132,149,170,.28),rgba(255,255,255,.10) 55%,rgba(99,123,153,.22));
-      filter:none;
-    }
-    .light-card:not(.active) .icon-shell {
-      color:#7f8995;
-      border-color:rgba(132,149,170,.22);
-      background:
-        radial-gradient(circle at 32% 24%,rgba(255,255,255,.09),rgba(255,255,255,.025) 28%,transparent 46%),
-        linear-gradient(145deg,#252d35,#19212a 68%,#131a21);
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.07),
-        0 0 0 1px rgba(255,255,255,.025),
-        0 6px 16px rgba(0,0,0,.30);
-    }
-    .light-card:not(.active) .icon-shell ha-icon {
-      filter:drop-shadow(0 1px 2px rgba(0,0,0,.42));
-    }
-    .light-card:not(.active) .state,
-    .light-card:not(.active) .subtext { color:#858e9a; }
-    .light-card:not(.active) .switch {
-      border-color:rgba(137,151,169,.30);
-      background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.006)),#12171d;
-      box-shadow:inset 0 2px 5px rgba(0,0,0,.58),0 3px 10px rgba(0,0,0,.28);
-    }
-    .light-card:not(.active) .switch::before { opacity:0; }
-    .light-card:not(.active) .knob {
-      background:radial-gradient(circle at 34% 28%,#f8fafc 0 25%,#dce3ea 58%,#bcc6d0 100%);
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.82),0 3px 8px rgba(0,0,0,.48);
-    }
-
-    @container (max-width:430px) {
-      .card {
-        height:94px;
-        min-height:94px;
-        max-height:94px;
-        grid-template-columns:50px minmax(0,1fr) auto;
-        column-gap:10px;
-        padding:9px 12px;
-        border-radius:17px;
-      }
-      .icon-shell { width:44px; height:44px; justify-self:center; }
-      .icon-shell ha-icon { --mdc-icon-size:23px; width:23px; height:23px; }
-      .name { font-size:14.5px; letter-spacing:-.10px; }
-      .state { margin-top:3px; font-size:11.5px; }
-      .subtext { margin-top:3px; font-size:10.5px; }
-      .chevron { width:18px; height:24px; }
-      .chevron ha-icon { --mdc-icon-size:21px; }
-      .switch { --w:54px; --h:28px; --knob:20px; padding:4px; }
-      .active .knob { transform:translateX(26px); }
-    }
-
-    /* Keep the phone layout single-line until the card is truly cramped. */
-    @container (max-width:160px) {
-      .card { column-gap:8px; padding-inline:9px; }
-      .name,.state,.subtext {
-        white-space:normal;
-        overflow:visible;
-        text-overflow:clip;
-        overflow-wrap:anywhere;
-      }
-      .name { line-height:1.12; }
-      .state,.subtext { line-height:1.2; }
-    }
-
-    @container (max-width:150px) {
-      .card {
-        grid-template-columns:50px minmax(0,1fr);
-        align-items:center;
-        row-gap:10px;
-        padding:12px;
-      }
-      .icon-shell { width:46px; height:46px; }
-      .icon-shell ha-icon { --mdc-icon-size:24px; width:24px; height:24px; }
-      .name { font-size:14px; }
-      .state { font-size:12px; }
-      .subtext { font-size:10.5px; }
-    }
-
-
-    /*
-     * REAL PHONE RESPONSIVE MODE
-     *
-     * This is viewport-gated, so desktop cards retain the compact desktop
-     * design even if an individual desktop card happens to be narrow.
-     */
-    @media (max-width:600px) {
-      .card:not(.thermostat-card) {
-        height:112px !important;
-        min-height:112px !important;
-        max-height:112px !important;
-        align-content:center;
-      }
-
-      .card:not(.thermostat-card) .name {
-        white-space:normal !important;
-        overflow:hidden !important;
-        text-overflow:clip !important;
-        overflow-wrap:anywhere;
-        display:-webkit-box !important;
-        -webkit-box-orient:vertical;
-        -webkit-line-clamp:2;
-        line-clamp:2;
-        line-height:1.12;
-      }
-
-      .card:not(.thermostat-card) .state {
-        white-space:normal !important;
-        overflow:hidden !important;
-        text-overflow:clip !important;
-        overflow-wrap:anywhere;
-        display:-webkit-box !important;
-        -webkit-box-orient:vertical;
-        -webkit-line-clamp:1;
-        line-clamp:1;
-        line-height:1.16;
-      }
-
-      .card:not(.thermostat-card) .subtext,
-      .card:not(.thermostat-card) .sensor-label {
-        white-space:normal !important;
-        overflow:hidden !important;
-        text-overflow:clip !important;
-        overflow-wrap:anywhere;
-        display:-webkit-box !important;
-        -webkit-box-orient:vertical;
-        -webkit-line-clamp:2;
-        line-clamp:2;
-        line-height:1.15;
-      }
-
-      /*
-       * On a phone, two-column cards are often only ~150-220px wide.
-       * Give those cards a second control row instead of squeezing text into
-       * a few pixels. This is intentionally BOTH viewport- and container-
-       * gated, so the same narrow width on desktop does not trigger it.
-       */
-      @container (max-width:260px) {
-        .card:not(.thermostat-card) {
-          height:128px !important;
-          min-height:128px !important;
-          max-height:128px !important;
-        }
-      }
-    }
-
-    @media (prefers-reduced-motion:reduce) {
-      *,*::before,*::after { transition:none!important; animation:none!important; }
-      .card:hover,.card:active { transform:none!important; }
-    }
-  `;
 
   class ReferenceCardBase extends HTMLElement {
     constructor() {
@@ -590,8 +99,66 @@
       this._held = false;
     }
 
-    set hass(value) { this._hass = value; this.update(); }
+    set hass(value) { this._hass = value; this.startColorTemplates(); this.update(); }
     get hass() { return this._hass; }
+
+    get config() { return this._config; }
+    set config(value) {
+      this.stopColorTemplates();
+      this._rawConfig = value;
+      this._config = value ? { ...value, ...(value.state_colors ? { state_colors:{ ...value.state_colors } } : {}) } : null;
+      this._colorTemplates = [];
+      for (const [key, field] of Object.entries(value || {})) {
+        const entries = key === 'state_colors' && field && typeof field === 'object'
+          ? Object.entries(field).map(([state, color]) => [[key, state], color])
+          : key.endsWith('_color') ? [[[key], field]] : [];
+        for (const [path, color] of entries) {
+          if (typeof color !== 'string' || !/\{[{%#]/.test(color)) continue;
+          this._colorTemplates.push({ path, template:color });
+          const target = path.length === 2 ? this._config[path[0]] : this._config;
+          delete target[path.at(-1)];
+        }
+      }
+      this.startColorTemplates();
+    }
+
+    connectedCallback() { this.startColorTemplates(); }
+
+    stopColorTemplates() {
+      this._templateGeneration = (this._templateGeneration || 0) + 1;
+      for (const unsubscribe of this._templateUnsubscribers || []) {
+        Promise.resolve().then(unsubscribe).catch((error) => console.debug('[Glow] Template cleanup', error));
+      }
+      this._templateUnsubscribers = [];
+      this._templateConnection = null;
+    }
+
+    startColorTemplates() {
+      const connection = this._hass?.connection;
+      if (!this.isConnected || !connection || !this._colorTemplates?.length || this._templateConnection === connection) return;
+      this.stopColorTemplates();
+      this._templateConnection = connection;
+      const generation = this._templateGeneration;
+      for (const { path, template } of this._colorTemplates) {
+        const apply = (message) => {
+          if (generation !== this._templateGeneration) return;
+          const target = path.length === 2 ? this._config[path[0]] : this._config;
+          if (message.error) {
+            delete target[path.at(-1)];
+            notify(this, `Color template (${path.join('.')}): ${message.error}`);
+          } else {
+            target[path.at(-1)] = message.result;
+          }
+          this.update();
+        };
+        Promise.resolve().then(() => connection.subscribeMessage(apply, {
+          type:'render_template', template, variables:{ config:this._rawConfig }, report_errors:true,
+        })).then((unsubscribe) => {
+          if (generation !== this._templateGeneration) return unsubscribe();
+          this._templateUnsubscribers.push(unsubscribe);
+        }).catch((error) => apply({ error:error.message || String(error) }));
+      }
+    }
 
     getCardSize() { return 2; }
     getGridOptions() { return { columns:6, min_columns:4 }; }
@@ -632,6 +199,15 @@
       return this._hass?.formatEntityState?.(state) || String(state.state || '');
     }
 
+    getGridOptions() {
+      const rows = this.shadowRoot?.querySelector('.grid-2-row') ? 2 : 1;
+      return { rows, columns:6, min_rows:rows, max_rows:rows, min_columns:6 };
+    }
+
+    getCardSize() {
+      return this.shadowRoot?.querySelector('.grid-2-row') ? 2 : 1;
+    }
+
     async service(domain, service, data) {
       try {
         await this._hass?.callService(domain, service, data);
@@ -651,6 +227,21 @@
 
     bindCard(card, tap, detailEntity = () => this.config?.entity) {
       if (!card) return;
+      const icon = card.querySelector(':scope > .icon-shell, :scope > .avatar');
+      const action = card.querySelector(':scope > .info-button, :scope > .battery-status, :scope > .nav-action, :scope > .control:has(.switch)');
+      if (icon && action) {
+        const anchor = document.createElement('div');
+        anchor.className = 'icon-control';
+        icon.before(anchor);
+        anchor.append(icon, action);
+        const badge = document.createElement('span');
+        badge.className = 'badge-face compact-action';
+        badge.setAttribute('aria-hidden', 'true');
+        const isBattery = action.classList.contains('battery-status');
+        const actionIcon = isBattery ? ICONS.battery : action.classList.contains('info-button') ? ICONS.info : action.classList.contains('nav-action') ? ICONS.navigate : 'mdi:power';
+        badge.innerHTML = `<ha-icon class="${isBattery ? 'battery-icon' : ''}" icon="${actionIcon}"></ha-icon>`;
+        action.append(badge);
+      }
       card.tabIndex = 0;
       card.setAttribute('role', 'button');
 
@@ -694,7 +285,7 @@
       });
     }
 
-    disconnectedCallback() { clearTimeout(this._holdTimer); }
+    disconnectedCallback() { clearTimeout(this._holdTimer); this.stopColorTemplates(); }
     render() {}
     update() {}
   }
@@ -709,47 +300,8 @@
 
     render() {
       this.shadowRoot.innerHTML = `
-        <style>
-          ${BASE_CSS}
-          .card {
-            --accent-rgb:255,190,57;
-            --accent2-rgb:111,142,204;
-            background:
-              linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.015) 28%,transparent 44%),
-              radial-gradient(120% 150% at -12% 42%,rgba(255,190,57,.10),transparent 65%),
-              radial-gradient(90% 130% at 108% -6%,rgba(103,133,190,.10),transparent 49%),
-              linear-gradient(133deg,#2a2b2c 0%,#20252b 48%,#131a22 100%);
-          }
-          @container (max-width:150px) {
-            button.control { grid-column:1 / -1; justify-self:end; }
-          }
-        
-          @media (max-width:600px) {
-            @container (max-width:260px) {
-              .card {
-                grid-template-columns:50px minmax(0,1fr) !important;
-                grid-template-rows:1fr auto !important;
-                row-gap:7px;
-                padding:10px 12px !important;
-              }
-
-              button.control {
-                grid-column:1 / -1 !important;
-                grid-row:2 !important;
-                justify-self:end;
-                align-self:end;
-              }
-
-              .content {
-                grid-column:2;
-                grid-row:1;
-                min-width:0;
-              }
-            }
-          }
-
-        </style>
-        <div class="card glow light-card">
+        <link rel="stylesheet" href="${GLOW_CARD_CSS_URL}">
+        <div class="card grid-1-row glow light-card">
           <div class="icon-shell"><ha-icon class="main-icon"></ha-icon></div>
           <div class="content">
             <div class="name"></div>
@@ -773,7 +325,7 @@
       if (!state || !card) return;
       const isOn = active(state);
       const isAvailable = available(state);
-      setAccent(card, stateColor(this.config, isOn ? 'on' : 'off', isOn ? 'active_color' : 'inactive_color', isOn ? [255,190,57] : [132,149,170]));
+      setAccent(card, stateColor(this.config, isOn ? 'on' : 'off', isOn ? 'active_color' : 'inactive_color', isOn ? lightColor(state) : [132,149,170]));
       card.classList.toggle('active', isOn);
       card.classList.toggle('unavailable', !isAvailable);
       card.setAttribute('aria-pressed', String(isOn));
@@ -813,800 +365,9 @@
 
     render() {
       this.shadowRoot.innerHTML = `
-        <style>
-          ${BASE_CSS}
+        <link rel="stylesheet" href="${GLOW_CARD_CSS_URL}">
 
-          /*
-           * v19: same visual height as the other non-thermostat cards.
-           * The icon spans the two desktop rows so the slider no longer forces
-           * the entire card to become taller than a normal light/person/sensor.
-           */
-          .card {
-            --accent-rgb:255,190,57;
-            --accent2-rgb:111,142,204;
-
-            --dim-a1:.18;
-            --dim-a2:.14;
-            --dim-a3:.085;
-            --dim-a4:.040;
-            --dim-radial:.17;
-            --dim-before:.58;
-
-            --dim-edge1:.98;
-            --dim-edge2:.78;
-            --dim-edge3:.80;
-            --dim-edge-glow1:.72;
-            --dim-edge-glow2:.28;
-
-            --dim-icon-border:.62;
-            --dim-icon-core:.25;
-            --dim-icon-core2:.095;
-            --dim-icon-glow1:.34;
-            --dim-icon-glow2:.13;
-            --dim-icon-filter:.55;
-
-            --dim-card-glow1:.28;
-            --dim-card-glow2:.14;
-
-            height:150px;
-            min-height:150px;
-            max-height:150px;
-            grid-template-columns:82px minmax(0,1fr);
-            grid-template-rows:1fr;
-            column-gap:22px;
-            row-gap:0;
-            padding:18px 24px 48px;
-            background:
-              linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.015) 28%,transparent 44%),
-              radial-gradient(116% 140% at -10% 30%,rgba(255,190,57,.10),transparent 66%),
-              radial-gradient(82% 105% at 110% -8%,rgba(103,133,190,.08),transparent 54%),
-              linear-gradient(133deg,#2b2b2c 0%,#21252a 47%,#131a22 100%);
-          }
-
-          .icon-shell {
-            grid-column:1;
-            grid-row:1;
-            align-self:center;
-          }
-
-          .content {
-            grid-column:2;
-            grid-row:1;
-            align-self:center;
-          }
-
-          /*
-           * Brightness now controls the strength of the card illumination.
-           * The RGB accent itself stays the configured color; only its visual
-           * intensity fades down with the brightness percentage.
-           */
-          .light-card.active {
-            background:
-              linear-gradient(135deg,rgba(255,255,255,.115),rgba(255,255,255,.032) 25%,transparent 43%),
-              linear-gradient(
-                90deg,
-                rgba(var(--accent-rgb),var(--dim-a1)) 0%,
-                rgba(var(--accent-rgb),var(--dim-a2)) 28%,
-                rgba(var(--accent-rgb),var(--dim-a3)) 55%,
-                rgba(var(--accent-rgb),var(--dim-a4)) 78%,
-                rgba(var(--accent-rgb),.010) 94%,
-                transparent 100%
-              ),
-              radial-gradient(
-                138% 172% at -16% 48%,
-                rgba(var(--accent-rgb),var(--dim-radial)),
-                transparent 76%
-              ),
-              radial-gradient(
-                94% 122% at 106% 2%,
-                rgba(var(--accent-rgb),.035),
-                transparent 66%
-              ),
-              linear-gradient(
-                133deg,
-                rgba(49,45,38,.94) 0%,
-                rgba(38,38,37,.95) 49%,
-                rgba(18,24,31,.97) 100%
-              ) !important;
-          }
-
-          .light-card.active::before {
-            opacity:var(--dim-before);
-          }
-
-          .light-card.active::after {
-            background:linear-gradient(
-              108deg,
-              rgba(var(--accent-rgb),var(--dim-edge1)) 0%,
-              rgba(var(--accent-rgb),var(--dim-edge2)) 27%,
-              rgba(255,255,255,.20) 55%,
-              rgba(var(--accent-rgb),var(--dim-edge3)) 100%
-            );
-            filter:
-              drop-shadow(0 0 2px rgba(var(--accent-rgb),var(--dim-edge-glow1)))
-              drop-shadow(0 0 7px rgba(var(--accent-rgb),var(--dim-edge-glow2)));
-          }
-
-          .light-card.active.glow {
-            box-shadow:
-              inset 0 1px 0 rgba(255,255,255,.18),
-              inset 0 -1px 0 rgba(0,0,0,.46),
-              inset 18px 0 48px rgba(var(--accent-rgb),.020),
-              0 0 12px rgba(var(--accent-rgb),var(--dim-card-glow1)),
-              0 0 28px rgba(var(--accent-rgb),var(--dim-card-glow2)),
-              0 12px 28px rgba(0,0,0,.42);
-          }
-
-          .light-card.active .icon-shell {
-            color:rgb(var(--accent-rgb));
-            border-color:rgba(var(--accent-rgb),var(--dim-icon-border));
-            background:
-              radial-gradient(
-                circle at 31% 23%,
-                rgba(255,255,255,.22),
-                rgba(255,255,255,.06) 25%,
-                transparent 43%
-              ),
-              radial-gradient(
-                circle at 50% 58%,
-                rgba(var(--accent-rgb),var(--dim-icon-core)),
-                rgba(var(--accent-rgb),var(--dim-icon-core2)) 50%,
-                transparent 74%
-              ),
-              linear-gradient(145deg,#403728,#282b2d 67%,#171e25);
-            box-shadow:
-              inset 0 1px 0 rgba(255,255,255,.18),
-              0 0 0 1px rgba(var(--accent-rgb),.10),
-              0 0 15px rgba(var(--accent-rgb),var(--dim-icon-glow1)),
-              0 0 28px rgba(var(--accent-rgb),var(--dim-icon-glow2)),
-              0 7px 18px rgba(0,0,0,.30);
-          }
-
-          .light-card.active .icon-shell ha-icon {
-            filter:
-              drop-shadow(0 1px 2px rgba(0,0,0,.42))
-              drop-shadow(0 0 9px rgba(var(--accent-rgb),var(--dim-icon-filter)));
-          }
-
-          @media (hover:hover) {
-            .light-card.active:hover {
-              box-shadow:
-                inset 0 1px 0 rgba(255,255,255,.20),
-                inset 18px 0 50px rgba(var(--accent-rgb),.025),
-                0 0 16px rgba(var(--accent-rgb),var(--dim-card-glow1)),
-                0 0 34px rgba(var(--accent-rgb),var(--dim-card-glow2)),
-                0 16px 31px rgba(0,0,0,.45);
-            }
-          }
-
-          .slider-row {
-            position:absolute;
-            z-index:7;
-            left:24px;
-            right:24px;
-            bottom:15px;
-            width:auto;
-            min-width:0;
-            display:block;
-            height:32px;
-          }
-
-          .slider-wrap {
-            position:relative;
-            width:100%;
-            min-width:0;
-            height:32px;
-            display:flex;
-            align-items:center;
-          }
-
-          .track {
-            position:absolute;
-            left:1px;
-            right:1px;
-            height:9px;
-            border-radius:999px;
-            overflow:visible;
-            background:linear-gradient(180deg,#2d333b,#252b33);
-            box-shadow:
-              inset 0 2px 4px rgba(0,0,0,.44),
-              inset 0 1px 0 rgba(255,255,255,.04);
-          }
-
-          .track::before {
-            content:'';
-            position:absolute;
-            inset:0 auto 0 0;
-            width:var(--fill,0%);
-            border-radius:inherit;
-            background:linear-gradient(
-              90deg,
-              rgb(var(--accent-rgb)),
-              rgba(var(--accent-rgb),.78)
-            );
-            box-shadow:
-              0 0 6px rgba(var(--accent-rgb),.86),
-              0 0 16px rgba(var(--accent-rgb),.36),
-              inset 0 1px 0 rgba(255,255,255,.36);
-          }
-
-          input[type=range] {
-            position:relative;
-            z-index:3;
-            width:100%;
-            min-width:0;
-            height:32px;
-            margin:0;
-            appearance:none;
-            -webkit-appearance:none;
-            background:transparent;
-            cursor:pointer;
-          }
-
-          input[type=range]::-webkit-slider-runnable-track {
-            height:9px;
-            background:transparent;
-          }
-
-          input[type=range]::-moz-range-track {
-            height:9px;
-            background:transparent;
-          }
-
-          input[type=range]::-webkit-slider-thumb {
-            appearance:none;
-            -webkit-appearance:none;
-            width:28px;
-            height:28px;
-            margin-top:-9.5px;
-            border:3px solid rgb(var(--accent-rgb));
-            border-radius:50%;
-            background:radial-gradient(
-              circle at 34% 28%,
-              #fff,
-              #eef2f6 58%,
-              #d1d9e1
-            );
-            box-shadow:
-              0 0 0 1px rgba(255,255,255,.30),
-              0 0 8px rgba(255,255,255,.52),
-              0 0 16px rgba(var(--accent-rgb),.68),
-              0 5px 9px rgba(0,0,0,.42);
-          }
-
-          input[type=range]::-moz-range-thumb {
-            width:24px;
-            height:24px;
-            border:3px solid rgb(var(--accent-rgb));
-            border-radius:50%;
-            background:radial-gradient(
-              circle at 34% 28%,
-              #fff,
-              #eef2f6 58%,
-              #d1d9e1
-            );
-            box-shadow:
-              0 0 8px rgba(255,255,255,.52),
-              0 0 16px rgba(var(--accent-rgb),.68),
-              0 5px 9px rgba(0,0,0,.42);
-          }
-
-          input[type=range]:disabled {
-            opacity:.35;
-            cursor:default;
-          }
-
-          input[type=range]:focus-visible { outline:none; }
-
-          .percent {
-            position:absolute;
-            right:0;
-            bottom:36px;
-            min-width:64px;
-            padding:8px 7px;
-            border:1px solid rgba(var(--accent-rgb),.55);
-            border-radius:11px;
-            background:
-              linear-gradient(
-                145deg,
-                rgba(var(--accent-rgb),.11),
-                rgba(255,255,255,.025)
-              ),
-              #25272a;
-            color:rgb(var(--accent-rgb));
-            font-size:14px;
-            font-weight:760;
-            line-height:1;
-            text-align:center;
-            font-variant-numeric:tabular-nums;
-            box-shadow:
-              inset 0 1px 0 rgba(255,255,255,.10),
-              0 0 11px rgba(var(--accent-rgb),.15),
-              0 4px 10px rgba(0,0,0,.25);
-          }
-
-          /*
-           * The tooltip is only enabled by the phone container query below.
-           * On desktop/tablet the permanent percentage badge is retained.
-           */
-          .slider-tooltip {
-            display:none;
-          }
-
-          .light-card:not(.active) .track {
-            background:linear-gradient(180deg,#252b32,#1c2229);
-            box-shadow:
-              inset 0 2px 4px rgba(0,0,0,.50),
-              inset 0 1px 0 rgba(255,255,255,.025);
-          }
-
-          .light-card:not(.active) .track::before {
-            background:#687482;
-            box-shadow:none;
-          }
-
-          .light-card:not(.active) input[type=range]::-webkit-slider-thumb {
-            border-color:#7b8794;
-            box-shadow:
-              0 0 0 1px rgba(255,255,255,.12),
-              0 4px 8px rgba(0,0,0,.40);
-          }
-
-          .light-card:not(.active) input[type=range]::-moz-range-thumb {
-            border-color:#7b8794;
-            box-shadow:0 4px 8px rgba(0,0,0,.40);
-          }
-
-          .light-card:not(.active) .percent {
-            border-color:rgba(135,149,166,.27);
-            background:
-              linear-gradient(
-                145deg,
-                rgba(255,255,255,.035),
-                rgba(255,255,255,.008)
-              ),
-              #1b2026;
-            color:#8994a1;
-            box-shadow:
-              inset 0 1px 0 rgba(255,255,255,.055),
-              0 4px 9px rgba(0,0,0,.24);
-          }
-
-          .power-toggle { display:none; }
-          .power-only .slider-row { display:none; }
-          .power-only {
-            height:150px;
-            min-height:150px;
-            max-height:150px;
-            grid-template-columns:82px minmax(0,1fr) auto;
-            grid-template-rows:auto;
-            padding:22px 25px;
-          }
-          .power-only .icon-shell {
-            grid-column:1;
-            grid-row:1;
-          }
-          .power-only .content {
-            grid-column:2;
-            grid-row:1;
-            align-self:center;
-          }
-          .power-only .power-toggle {
-            display:block;
-            grid-column:3;
-            grid-row:1;
-          }
-
-          /* Slider interaction feedback. */
-
-          /*
-           * Compact phone mode:
-           * - same 78px baseline height as the other non-thermostat cards
-           * - no permanent percentage badge
-           * - slider gets the entire card width
-           * - percentage appears only as a floating tooltip while dragging
-           */
-          @container (max-width:430px) {
-            /*
-             * Dimmable cards need a little more vertical room than the
-             * one-action cards because the slider is a second control row.
-             * 94px keeps the phone layout compact without crushing the text.
-             */
-            .card {
-              height:94px;
-              min-height:94px;
-              max-height:94px;
-              grid-template-columns:50px minmax(0,1fr);
-              grid-template-rows:1fr;
-              column-gap:10px;
-              row-gap:0;
-              padding:10px 12px 27px;
-              border-radius:18px;
-            }
-
-            .icon-shell {
-              grid-column:1;
-              grid-row:1;
-              align-self:center;
-              justify-self:center;
-              width:46px;
-              height:46px;
-            }
-
-            .icon-shell ha-icon {
-              --mdc-icon-size:24px;
-              width:24px;
-              height:24px;
-            }
-
-            .content {
-              grid-column:2;
-              grid-row:1;
-              align-self:center;
-              min-height:0;
-              padding-bottom:0;
-            }
-
-            .content .name {
-              font-size:14.5px;
-              line-height:1.08;
-              letter-spacing:-.10px;
-            }
-
-            .content .state {
-              margin-top:2px;
-              font-size:11.5px;
-              line-height:1.08;
-            }
-
-            .content .subtext {
-              margin-top:2px;
-              font-size:10px;
-              line-height:1.05;
-            }
-
-            .name,
-            .state,
-            .subtext {
-              white-space:nowrap;
-              overflow:hidden;
-              text-overflow:ellipsis;
-            }
-
-            /*
-             * Match the target layout: the slider begins at the text column,
-             * not underneath the icon, and runs to the right card padding.
-             */
-            .slider-row {
-              position:absolute;
-              z-index:8;
-              left:12px;
-              right:12px;
-              bottom:8px;
-              width:auto;
-              min-width:0;
-              display:block;
-              height:18px;
-            }
-
-            .slider-wrap {
-              position:relative;
-              width:100%;
-              min-width:0;
-              height:18px;
-              display:flex;
-              align-items:center;
-            }
-
-            .track {
-              left:0;
-              right:0;
-              height:5px;
-            }
-
-            input[type=range] {
-              width:100%;
-              min-width:0;
-              height:18px;
-            }
-
-            input[type=range]::-webkit-slider-runnable-track {
-              height:5px;
-            }
-
-            input[type=range]::-moz-range-track {
-              height:5px;
-            }
-
-            input[type=range]::-webkit-slider-thumb {
-              width:18px;
-              height:18px;
-              margin-top:-6.5px;
-              border-width:2px;
-              transform:none !important;
-              transition:none !important;
-            }
-
-            input[type=range]::-moz-range-thumb {
-              width:18px;
-              height:18px;
-              border-width:2px;
-              transform:none !important;
-              transition:none !important;
-            }
-
-            .percent {
-              display:none;
-            }
-
-            .slider-tooltip {
-              position:absolute;
-              z-index:12;
-              display:block;
-              left:var(--tooltip-left,50%);
-              bottom:19px;
-              min-width:40px;
-              padding:4px 6px;
-              border:1px solid rgba(var(--accent-rgb),.52);
-              border-radius:8px;
-              background:
-                linear-gradient(
-                  145deg,
-                  rgba(var(--accent-rgb),.14),
-                  rgba(255,255,255,.035)
-                ),
-                rgba(19,24,30,.96);
-              color:#f8fafc;
-              font-size:10px;
-              line-height:1;
-              font-weight:760;
-              text-align:center;
-              font-variant-numeric:tabular-nums;
-              box-shadow:
-                inset 0 1px 0 rgba(255,255,255,.10),
-                0 0 10px rgba(var(--accent-rgb),.24),
-                0 4px 10px rgba(0,0,0,.34);
-              pointer-events:none;
-              opacity:0;
-              transform:translateX(-50%);
-              transition:opacity .10s linear;
-            }
-
-            .slider-tooltip::after {
-              content:'';
-              position:absolute;
-              left:50%;
-              top:100%;
-              width:7px;
-              height:7px;
-              border-right:1px solid rgba(var(--accent-rgb),.40);
-              border-bottom:1px solid rgba(var(--accent-rgb),.40);
-              background:rgba(19,24,30,.96);
-              transform:translate(-50%,-4px) rotate(45deg);
-            }
-
-            .card.slider-interacting .slider-tooltip {
-              opacity:1;
-              transform:translateX(-50%);
-            }
-
-            /*
-             * Non-dimmable fallback stays the same compact height as a
-             * standard light card because it has no slider row.
-             */
-            .power-only {
-              height:94px;
-              min-height:94px;
-              max-height:94px;
-              grid-template-columns:50px minmax(0,1fr) auto;
-              grid-template-rows:1fr;
-              column-gap:10px;
-              padding:9px 12px;
-            }
-
-            .power-only .icon-shell {
-              grid-column:1;
-              grid-row:1;
-              width:44px;
-              height:44px;
-            }
-
-            .power-only .content {
-              grid-column:2;
-              grid-row:1;
-              align-self:center;
-              padding-bottom:0;
-            }
-
-            .power-only .power-toggle {
-              display:block;
-              position:static;
-              grid-column:3;
-              grid-row:1;
-              align-self:center;
-            }
-          }
-
-          /*
-           * Only reflow controls once the card is genuinely too narrow.
-           * Normal phone widths keep the compact 78px layout.
-           */
-          @container (max-width:150px) {
-            /*
-             * At very narrow widths the slider may use the whole lower row
-             * so it remains practical to drag. The card gains only a few
-             * pixels instead of collapsing the slider.
-             */
-            .card:not(.power-only) {
-              height:94px;
-              min-height:94px;
-              max-height:94px;
-              padding-bottom:27px;
-            }
-
-            .card:not(.power-only) .slider-row {
-              left:8px;
-              right:8px;
-              bottom:7px;
-            }
-
-            .card:not(.power-only) .name,
-            .card:not(.power-only) .state,
-            .card:not(.power-only) .subtext {
-              white-space:nowrap;
-              overflow:hidden;
-              text-overflow:ellipsis;
-            }
-
-            .power-only {
-              height:94px;
-              min-height:94px;
-              max-height:94px;
-              grid-template-columns:44px minmax(0,1fr) auto;
-              grid-template-rows:1fr;
-              column-gap:6px;
-              padding:8px;
-            }
-
-            .power-only .power-toggle {
-              grid-column:3;
-              grid-row:1;
-              justify-self:end;
-            }
-
-            .power-only .name,
-            .power-only .state,
-            .power-only .subtext {
-              white-space:nowrap;
-              overflow:hidden;
-              text-overflow:ellipsis;
-            }
-          }
-        
-          @media (max-width:600px) {
-            .card:not(.power-only) {
-              padding-bottom:31px;
-            }
-
-            .card:not(.power-only) .content .name {
-              white-space:normal !important;
-              overflow:hidden !important;
-              text-overflow:clip !important;
-              overflow-wrap:anywhere;
-              display:-webkit-box !important;
-              -webkit-box-orient:vertical;
-              -webkit-line-clamp:2;
-              line-clamp:2;
-            }
-
-            .card:not(.power-only) .content .state,
-            .card:not(.power-only) .content .subtext {
-              white-space:normal !important;
-              overflow:hidden !important;
-              text-overflow:clip !important;
-            }
-
-            .card:not(.power-only) .content .subtext {
-              display:-webkit-box !important;
-              -webkit-box-orient:vertical;
-              -webkit-line-clamp:1;
-              line-clamp:1;
-            }
-
-            /* Keep the full-width slider across the phone card. */
-            .card:not(.power-only) .slider-row {
-              left:12px;
-              right:12px;
-              bottom:8px;
-            }
-
-            .power-only {
-              height:112px !important;
-              min-height:112px !important;
-              max-height:112px !important;
-            }
-          }
-
-        
-          @media (max-width:600px) {
-            .card:not(.power-only) {
-              height:112px !important;
-              min-height:112px !important;
-              max-height:112px !important;
-              padding-bottom:31px !important;
-            }
-
-            .card:not(.power-only) .content .name {
-              white-space:normal !important;
-              overflow:hidden !important;
-              text-overflow:clip !important;
-              overflow-wrap:anywhere;
-              display:-webkit-box !important;
-              -webkit-box-orient:vertical;
-              -webkit-line-clamp:2;
-              line-clamp:2;
-            }
-
-            /* Slider uses the full inner width of the card. */
-            .card:not(.power-only) .slider-row {
-              left:12px !important;
-              right:12px !important;
-              bottom:8px !important;
-              width:auto !important;
-            }
-
-            .power-only {
-              height:112px !important;
-              min-height:112px !important;
-              max-height:112px !important;
-            }
-
-            @container (max-width:260px) {
-              .card:not(.power-only) {
-                height:128px !important;
-                min-height:128px !important;
-                max-height:128px !important;
-                padding-bottom:33px !important;
-              }
-
-              .card:not(.power-only) {
-                grid-template-columns:50px minmax(0,1fr) !important;
-                grid-template-rows:1fr !important;
-              }
-
-              .card:not(.power-only) .slider-row {
-                left:10px !important;
-                right:10px !important;
-                bottom:9px !important;
-              }
-
-              .power-only {
-                height:128px !important;
-                min-height:128px !important;
-                max-height:128px !important;
-                grid-template-columns:50px minmax(0,1fr) !important;
-                grid-template-rows:1fr auto !important;
-                row-gap:7px;
-                padding:10px 12px !important;
-              }
-
-              .power-only .power-toggle {
-                grid-column:1 / -1 !important;
-                grid-row:2 !important;
-                justify-self:end;
-                align-self:end;
-              }
-
-              .power-only .content {
-                grid-column:2 !important;
-                grid-row:1 !important;
-              }
-            }
-          }
-
-        </style>
-
-        <div class="card glow light-card">
+        <div class="card grid-2-row glow light-card">
           <div class="icon-shell">
             <ha-icon class="main-icon"></ha-icon>
           </div>
@@ -1616,17 +377,6 @@
             <div class="state"></div>
             <div class="subtext"></div>
           </div>
-
-          <button
-            class="control power-toggle"
-            type="button"
-            data-control
-            aria-label="Toggle"
-          >
-            <span class="switch">
-              <span class="knob"></span>
-            </span>
-          </button>
 
           <div class="slider-row" data-control>
             <div class="slider-wrap">
@@ -1647,7 +397,6 @@
 
       const card = this.shadowRoot.querySelector('.card');
       const slider = this.shadowRoot.querySelector('input[type=range]');
-      const power = this.shadowRoot.querySelector('.power-toggle');
 
       this.bindCard(card, () => this.toggle());
 
@@ -1702,10 +451,6 @@
 
       slider.addEventListener('blur', stopSliderFeedback);
 
-      power.addEventListener('click', (event) => {
-        event.stopPropagation();
-        this.toggle();
-      });
     }
 
     brightnessEntityId() {
@@ -1858,7 +603,7 @@
           this.config,
           isOn ? 'on' : 'off',
           isOn ? 'active_color' : 'inactive_color',
-          isOn ? [255,190,57] : [132,149,170]
+          isOn ? lightColor(this.entity(this.brightnessEntityId()) || state) : [132,149,170]
         )
       );
 
@@ -1897,11 +642,6 @@
         this.paint(canDim ? this.currentBrightness() : 0);
       }
 
-      const powerToggle =
-        this.shadowRoot.querySelector('.power-toggle');
-
-      powerToggle.disabled = !isAvailable;
-      powerToggle.setAttribute('aria-pressed', String(isOn));
     }
 
     disconnectedCallback() {
@@ -1935,187 +675,8 @@
 
     render() {
       this.shadowRoot.innerHTML = `
-        <style>
-          ${BASE_CSS}
-          .card { grid-template-columns:92px minmax(0,1fr) auto; }
-
-          .person-home {
-            background:
-              linear-gradient(135deg,rgba(255,255,255,.105),rgba(255,255,255,.026) 26%,transparent 43%),
-              linear-gradient(90deg,rgba(var(--accent-rgb),.115),rgba(var(--accent-rgb),.050) 56%,rgba(var(--accent-rgb),.012) 88%,transparent 100%),
-              radial-gradient(122% 158% at -12% 44%,rgba(var(--accent-rgb),.115),transparent 72%),
-              linear-gradient(133deg,rgba(24,44,38,.94) 0%,rgba(23,37,37,.95) 44%,rgba(15,25,31,.97) 100%);
-          }
-          .person-zone {
-            background:
-              linear-gradient(135deg,rgba(255,255,255,.105),rgba(255,255,255,.026) 26%,transparent 43%),
-              linear-gradient(90deg,rgba(var(--accent-rgb),.115),rgba(var(--accent-rgb),.050) 56%,rgba(var(--accent-rgb),.012) 88%,transparent 100%),
-              radial-gradient(122% 158% at -12% 44%,rgba(var(--accent-rgb),.120),transparent 72%),
-              linear-gradient(133deg,rgba(27,45,62,.94) 0%,rgba(23,35,50,.95) 44%,rgba(14,23,34,.97) 100%);
-          }
-          /* Away is deliberately one hue: red only, no purple second accent. */
-          .person-away {
-            background:
-              linear-gradient(135deg,rgba(255,255,255,.095),rgba(255,255,255,.023) 26%,transparent 43%),
-              linear-gradient(90deg,rgba(var(--accent-rgb),.130),rgba(var(--accent-rgb),.055) 58%,rgba(var(--accent-rgb),.014) 90%,transparent 100%),
-              radial-gradient(124% 158% at -12% 44%,rgba(var(--accent-rgb),.135),transparent 73%),
-              linear-gradient(133deg,rgba(48,29,32,.94) 0%,rgba(37,27,30,.95) 46%,rgba(20,22,27,.97) 100%);
-          }
-          .person-unknown {
-            background:
-              linear-gradient(135deg,rgba(255,255,255,.055),rgba(255,255,255,.012) 28%,transparent 44%),
-              linear-gradient(133deg,#252b31 0%,#1b2128 48%,#11171e 100%);
-          }
-
-          .avatar {
-            position:relative;
-            z-index:3;
-            width:82px;
-            height:82px;
-            display:grid;
-            place-items:center;
-            justify-self:center;
-          }
-          .portrait,.fallback {
-            width:76px;
-            height:76px;
-            display:grid;
-            place-items:center;
-            overflow:hidden;
-            border-radius:50%;
-            border:2px solid rgb(var(--accent-rgb));
-            background:linear-gradient(145deg,#28364a,#172033);
-            box-shadow:
-              0 0 0 1px rgba(var(--accent-rgb),.20),
-              0 0 12px rgba(var(--accent-rgb),.78),
-              0 0 25px rgba(var(--accent-rgb),.30),
-              0 7px 17px rgba(0,0,0,.34);
-          }
-          .portrait { object-fit:cover; object-position:center; }
-          .fallback ha-icon { --mdc-icon-size:32px; color:rgb(var(--accent-rgb)); }
-
-          .badge {
-            position:absolute;
-            top:-2px;
-            right:-2px;
-            width:30px;
-            height:30px;
-            display:grid;
-            place-items:center;
-            padding:0;
-            overflow:hidden;
-            border-radius:50%;
-            border:2px solid rgb(var(--accent-rgb));
-            background:
-              radial-gradient(circle at 35% 28%,rgba(var(--accent-rgb),.12),transparent 38%),
-              linear-gradient(145deg,rgba(24,30,39,.98),rgba(7,11,17,.99));
-            color:rgb(var(--accent-rgb));
-            box-shadow:
-              inset 0 1px 0 rgba(255,255,255,.09),
-              0 0 0 1px rgba(var(--accent-rgb),.16),
-              0 0 8px rgba(var(--accent-rgb),.82),
-              0 0 17px rgba(var(--accent-rgb),.38),
-              0 4px 9px rgba(0,0,0,.36);
-          }
-          .badge ha-icon {
-            --mdc-icon-size:17px;
-            width:17px;
-            height:17px;
-            display:grid;
-            place-items:center;
-            color:rgb(var(--accent-rgb));
-            filter:drop-shadow(0 0 5px rgba(var(--accent-rgb),.62));
-          }
-
-          .person-away .portrait,.person-away .fallback {
-            filter:grayscale(1) saturate(.08);
-            opacity:.62;
-          }
-          .person-unknown .portrait,.person-unknown .fallback {
-            filter:grayscale(1);
-            opacity:.45;
-          }
-
-          /* Battery is intentionally only a symbol: no pill, ring or visible percentage. */
-          .battery-status {
-            position:relative;
-            z-index:6;
-            width:32px;
-            height:32px;
-            min-width:32px;
-            display:grid;
-            place-items:center;
-            padding:0;
-            border:0 !important;
-            border-radius:8px !important;
-            background:transparent !important;
-            color:rgb(var(--accent-rgb));
-            box-shadow:none !important;
-            opacity:.92;
-            transition:opacity .16s ease,transform .16s ease;
-          }
-          @media (hover:hover) { .battery-status:hover { opacity:1; } }
-          .battery-status:active { transform:scale(.92); }
-          .battery-status ha-icon {
-            --mdc-icon-size:26px;
-            width:26px;
-            height:26px;
-            color:rgb(var(--accent-rgb));
-            filter:drop-shadow(0 0 4px rgba(var(--accent-rgb),.20));
-          }
-          .battery-status[hidden] { display:none !important; }
-
-          @container (max-width:430px) {
-            .card { grid-template-columns:50px minmax(0,1fr) auto; height:94px; min-height:94px; max-height:94px; }
-            .avatar { width:46px; height:46px; }
-            .portrait,.fallback { width:42px; height:42px; }
-            .badge { width:19px; height:19px; border-width:1.5px; }
-            .badge ha-icon { --mdc-icon-size:10px; width:10px; height:10px; }
-            .battery-status { width:25px; height:25px; min-width:25px; }
-            .battery-status ha-icon { --mdc-icon-size:20px; width:20px; height:20px; }
-          }
-          @container (max-width:150px) {
-            .card { grid-template-columns:58px minmax(0,1fr); row-gap:8px; }
-            .battery-status { grid-column:1/-1; justify-self:end; }
-          }
-          @container (max-width:140px) {
-            .card { grid-template-columns:50px minmax(0,1fr); }
-            .avatar { width:48px; height:48px; }
-            .portrait,.fallback { width:44px; height:44px; }
-          }
-        
-          @media (max-width:600px) {
-            @container (max-width:260px) {
-              .card {
-                grid-template-columns:50px minmax(0,1fr) !important;
-                grid-template-rows:1fr auto !important;
-                row-gap:6px;
-                padding:10px 12px !important;
-              }
-
-              .avatar {
-                grid-column:1;
-                grid-row:1;
-                align-self:center;
-              }
-
-              .content {
-                grid-column:2;
-                grid-row:1;
-                min-width:0;
-              }
-
-              .battery-status {
-                grid-column:1 / -1 !important;
-                grid-row:2 !important;
-                justify-self:end;
-                align-self:end;
-              }
-            }
-          }
-
-        </style>
-        <div class="card glow">
+        <link rel="stylesheet" href="${GLOW_CARD_CSS_URL}">
+        <div class="card grid-1-row glow">
           <div class="avatar"></div>
           <div class="content">
             <div class="name"></div>
@@ -2167,8 +728,8 @@
       const badgeIcon = presence === 'home' ? ICONS.home : presence === 'zone' ? ICONS.zone : presence === 'away' ? ICONS.away : ICONS.unknown;
       const picture = state.attributes?.entity_picture;
       this.shadowRoot.querySelector('.avatar').innerHTML = picture
-        ? `<img class="portrait" alt="" src="${escapeHtml(picture)}"><span class="badge" aria-hidden="true"><ha-icon icon="${badgeIcon}"></ha-icon></span>`
-        : `<div class="fallback"><ha-icon icon="${escapeHtml(this.config.icon || state.attributes?.icon || ICONS.person)}"></ha-icon></div><span class="badge" aria-hidden="true"><ha-icon icon="${badgeIcon}"></ha-icon></span>`;
+        ? `<img class="portrait" alt="" src="${escapeHtml(picture)}"><span class="badge badge-face" aria-hidden="true"><ha-icon icon="${badgeIcon}"></ha-icon></span>`
+        : `<div class="fallback"><ha-icon icon="${escapeHtml(this.config.icon || state.attributes?.icon || ICONS.person)}"></ha-icon></div><span class="badge badge-face" aria-hidden="true"><ha-icon icon="${badgeIcon}"></ha-icon></span>`;
 
       const battery = this.shadowRoot.querySelector('.battery-status');
       const batteryId = this.config.battery_entity;
@@ -2179,7 +740,9 @@
         const numeric = Number(batteryState?.state);
         const hasNumber = batteryAvailable && Number.isFinite(numeric);
         const unit = String(batteryState?.attributes?.unit_of_measurement || (hasNumber ? '%' : '')).trim();
-        this.shadowRoot.querySelector('.battery-icon').icon = this.batteryIcon(numeric, batteryAvailable);
+        this.shadowRoot.querySelectorAll('.battery-icon').forEach((icon) => {
+          icon.icon = this.batteryIcon(numeric, batteryAvailable);
+        });
         battery.setAttribute('title', batteryAvailable ? `Battery ${String(batteryState.state)}${unit ? ` ${unit}` : ''}` : 'Battery unavailable');
         battery.setAttribute('aria-label', `Battery: ${batteryAvailable ? String(batteryState.state) + (unit ? ` ${unit}` : '') : 'Unavailable'}. More details`);
       }
@@ -2201,219 +764,9 @@
 
     render() {
       this.shadowRoot.innerHTML = `
-        <style>
-          ${BASE_CSS}
-          .card {
-            --accent-rgb:56,169,255;
-            --accent2-rgb:56,169,255;
-            grid-template-columns:82px minmax(0,1fr) auto;
-          }
+        <link rel="stylesheet" href="${GLOW_CARD_CSS_URL}">
 
-          /* Inactive sensors use the same neutral/dark treatment as an OFF light. */
-          .sensor-card:not(.active) {
-            border-color:rgba(128,145,166,.20);
-            background:
-              linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.008) 30%,transparent 48%),
-              radial-gradient(95% 125% at 108% -8%,rgba(88,117,156,.055),transparent 54%),
-              linear-gradient(133deg,#20262d 0%,#171d24 50%,#10161d 100%) !important;
-            box-shadow:
-              inset 0 1px 0 rgba(255,255,255,.075),
-              inset 0 -1px 0 rgba(0,0,0,.52),
-              0 9px 22px rgba(0,0,0,.36) !important;
-          }
-          .sensor-card:not(.active)::before { opacity:.10; }
-          .sensor-card:not(.active)::after {
-            background:linear-gradient(108deg,rgba(132,149,170,.28),rgba(255,255,255,.10) 55%,rgba(99,123,153,.22));
-            filter:none;
-          }
-          .sensor-card:not(.active) .icon-shell {
-            color:#7f8995;
-            border-color:rgba(132,149,170,.22);
-            background:
-              radial-gradient(circle at 32% 24%,rgba(255,255,255,.09),rgba(255,255,255,.025) 28%,transparent 46%),
-              linear-gradient(145deg,#252d35,#19212a 68%,#131a21);
-            box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 6px 16px rgba(0,0,0,.30);
-          }
-          .sensor-card:not(.active) .icon-shell ha-icon {
-            filter:drop-shadow(0 1px 2px rgba(0,0,0,.42));
-          }
-          .sensor-card:not(.active) .sensor-label,
-          .sensor-card:not(.active) .unit { color:#87919d; }
-
-          .sensor-card.active {
-            background:
-              linear-gradient(135deg,rgba(255,255,255,.11),rgba(255,255,255,.03) 26%,transparent 43%),
-              linear-gradient(90deg,rgba(var(--accent-rgb),.15),rgba(var(--accent-rgb),.085) 52%,rgba(var(--accent-rgb),.030) 80%,rgba(var(--accent-rgb),.010) 95%,transparent 100%),
-              radial-gradient(128% 158% at -13% 44%,rgba(var(--accent-rgb),.15),transparent 74%),
-              linear-gradient(133deg,rgba(29,49,67,.94) 0%,rgba(23,38,55,.95) 49%,rgba(14,23,33,.97) 100%);
-            -webkit-backdrop-filter:blur(18px) saturate(120%);
-            backdrop-filter:blur(18px) saturate(120%);
-            box-shadow:
-              inset 0 1px 0 rgba(255,255,255,.18),
-              inset 0 0 0 1px rgba(255,255,255,.015),
-              inset 0 -1px 0 rgba(0,0,0,.43),
-              0 0 12px rgba(var(--accent-rgb),.25),
-              0 0 28px rgba(var(--accent-rgb),.11),
-              0 12px 28px rgba(0,0,0,.42);
-          }
-          .sensor-card.active::before { opacity:.58; }
-          .sensor-card.active .icon-shell {
-            color:rgb(var(--accent-rgb));
-            border-color:rgba(var(--accent-rgb),.60);
-            background:
-              radial-gradient(circle at 32% 24%,rgba(255,255,255,.20),rgba(255,255,255,.055) 25%,transparent 44%),
-              radial-gradient(circle at 50% 62%,rgba(var(--accent-rgb),.21),rgba(var(--accent-rgb),.080) 50%,transparent 73%),
-              linear-gradient(145deg,#27435d,#1c3044 68%,#142233);
-            box-shadow:
-              inset 0 1px 0 rgba(255,255,255,.13),
-              0 0 0 1px rgba(var(--accent-rgb),.10),
-              0 0 14px rgba(var(--accent-rgb),.31),
-              0 0 26px rgba(var(--accent-rgb),.11),
-              0 7px 18px rgba(0,0,0,.30);
-          }
-          .sensor-card.active .icon-shell ha-icon {
-            filter:
-              drop-shadow(0 1px 2px rgba(0,0,0,.42))
-              drop-shadow(0 0 9px rgba(var(--accent-rgb),.60));
-          }
-          .sensor-card.activity-unavailable .icon-shell {
-            filter:saturate(.55);
-            opacity:.65;
-          }
-
-          .sensor-label {
-            color:#9db2cb;
-            font-size:15px;
-            line-height:1.1;
-            font-weight:520;
-          }
-          .reading {
-            margin-top:7px;
-            display:flex;
-            flex-wrap:wrap;
-            align-items:baseline;
-            gap:7px;
-            min-width:0;
-          }
-          .value {
-            color:#f7f9fc;
-            font-size:43px;
-            line-height:.95;
-            font-weight:770;
-            letter-spacing:-1.25px;
-            font-variant-numeric:tabular-nums;
-            overflow-wrap:anywhere;
-          }
-          .unit {
-            color:#bdc9d9;
-            font-size:19px;
-            line-height:1;
-            font-weight:430;
-          }
-
-          /* Symbol-only info action, matching the person battery treatment. */
-          .info-button {
-            width:32px;
-            height:32px;
-            min-width:32px;
-            display:grid;
-            place-items:center;
-            border:0 !important;
-            border-radius:8px !important;
-            background:transparent !important;
-            color:#8f9aa6 !important;
-            box-shadow:none !important;
-            opacity:.92;
-            transition:opacity .16s ease;
-          }
-          @media (hover:hover) {
-            .info-button:hover { opacity:1; }
-          }
-          .info-button ha-icon {
-            --mdc-icon-size:25px;
-            width:25px;
-            height:25px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            filter:drop-shadow(0 0 4px rgba(var(--accent-rgb),.16));
-          }
-          .sensor-card.active .info-button {
-            color:rgb(var(--accent-rgb)) !important;
-          }
-
-          @container (max-width:430px) {
-            .card {
-              grid-template-columns:50px minmax(0,1fr) auto;
-              height:94px;
-              min-height:94px;
-              max-height:94px;
-            }
-            .sensor-label { font-size:10.5px; }
-            .reading { margin-top:3px; gap:4px; }
-            .value { font-size:25px; letter-spacing:-.55px; }
-            .unit { font-size:12px; }
-            .info-button {
-              width:25px;
-              height:25px;
-              min-width:25px;
-            }
-            .info-button ha-icon {
-              --mdc-icon-size:19px;
-              width:19px;
-              height:19px;
-            }
-          }
-          @container (max-width:150px) {
-            .card { grid-template-columns:50px minmax(0,1fr); }
-            .info-button {
-              grid-column:1/-1;
-              justify-self:end;
-            }
-          }
-        
-          @media (max-width:600px) {
-            .sensor-label {
-              white-space:normal;
-              overflow:hidden;
-              overflow-wrap:anywhere;
-              display:-webkit-box;
-              -webkit-box-orient:vertical;
-              -webkit-line-clamp:2;
-              line-clamp:2;
-            }
-
-            @container (max-width:260px) {
-              .card {
-                grid-template-columns:50px minmax(0,1fr) !important;
-                grid-template-rows:1fr auto !important;
-                row-gap:5px;
-                padding:10px 12px !important;
-              }
-
-              .icon-shell {
-                grid-column:1;
-                grid-row:1;
-              }
-
-              .content {
-                grid-column:2;
-                grid-row:1;
-                min-width:0;
-              }
-
-              .info-button {
-                grid-column:1 / -1 !important;
-                grid-row:2 !important;
-                justify-self:end;
-                align-self:end;
-              }
-            }
-          }
-
-        </style>
-
-        <div class="card glow sensor-card">
+        <div class="card grid-1-row glow sensor-card">
           <div class="icon-shell"><ha-icon class="main-icon"></ha-icon></div>
           <div class="content">
             <div class="sensor-label"></div>
@@ -2546,217 +899,9 @@
 
     render() {
       this.shadowRoot.innerHTML = `
-        <style>
-          ${BASE_CSS}
+        <link rel="stylesheet" href="${GLOW_CARD_CSS_URL}">
 
-          .thermostat-card {
-            height:auto;
-            max-height:none;
-            --accent-rgb:108,163,220;
-            --accent2-rgb:108,163,220;
-            min-height:188px;
-            grid-template-columns:82px minmax(0,1fr);
-            grid-template-rows:auto auto;
-            row-gap:16px;
-            background:
-              linear-gradient(135deg,rgba(255,255,255,.075),rgba(255,255,255,.012) 30%,transparent 48%),
-              radial-gradient(95% 125% at 108% -8%,rgba(var(--accent-rgb),.055),transparent 54%),
-              linear-gradient(133deg,#20262d 0%,#171d24 50%,#10161d 100%);
-          }
-
-          .thermostat-card.heating,
-          .thermostat-card.cooling {
-            background:
-              linear-gradient(135deg,rgba(255,255,255,.105),rgba(255,255,255,.026) 26%,transparent 44%),
-              linear-gradient(90deg,rgba(var(--accent-rgb),.14),rgba(var(--accent-rgb),.075) 52%,rgba(var(--accent-rgb),.018) 88%,transparent),
-              linear-gradient(133deg,rgba(42,38,36,.95),rgba(31,32,34,.96) 50%,rgba(17,23,29,.98) 100%);
-            box-shadow:
-              inset 0 1px 0 rgba(255,255,255,.17),
-              0 0 12px rgba(var(--accent-rgb),.26),
-              0 0 27px rgba(var(--accent-rgb),.11),
-              0 11px 26px rgba(0,0,0,.40);
-          }
-
-          .thermostat-card.idle::after,
-          .thermostat-card.off::after {
-            background:
-              linear-gradient(
-                108deg,
-                rgba(var(--accent-rgb),.34),
-                rgba(255,255,255,.10) 55%,
-                rgba(var(--accent-rgb),.22)
-              );
-            filter:none;
-          }
-
-          .thermostat-card.idle .icon-shell,
-          .thermostat-card.off .icon-shell {
-            color:rgb(var(--accent-rgb));
-            border-color:rgba(var(--accent-rgb),.30);
-            box-shadow:
-              inset 0 1px 0 rgba(255,255,255,.07),
-              0 0 10px rgba(var(--accent-rgb),.08),
-              0 6px 16px rgba(0,0,0,.30);
-          }
-
-          .thermostat-main {
-            min-width:0;
-            align-self:center;
-          }
-
-          /* Only the current temperature is kept as the card subtext. */
-          .current {
-            margin-top:6px;
-            color:#aeb9c7;
-            font-size:14px;
-            line-height:1.2;
-            font-variant-numeric:tabular-nums;
-          }
-
-          .thermostat-controls {
-            position:relative;
-            z-index:7;
-            grid-column:1/-1;
-            grid-row:2;
-            justify-self:center;
-            width:min(100%,330px);
-            display:grid;
-            grid-template-columns:44px minmax(96px,1fr) 44px;
-            align-items:center;
-            gap:14px;
-          }
-
-          .target-display {
-            min-width:0;
-            display:flex;
-            align-items:baseline;
-            justify-content:center;
-            gap:6px;
-            padding:9px 14px;
-            border:1px solid rgba(var(--accent-rgb),.26);
-            border-radius:14px;
-            background:
-              linear-gradient(
-                145deg,
-                rgba(var(--accent-rgb),.075),
-                rgba(255,255,255,.018)
-              ),
-              rgba(13,19,26,.58);
-            box-shadow:
-              inset 0 1px 0 rgba(255,255,255,.07),
-              0 4px 12px rgba(0,0,0,.23);
-          }
-
-          .target {
-            color:#f8fafc;
-            font-size:29px;
-            line-height:1;
-            font-weight:780;
-            letter-spacing:-.8px;
-            font-variant-numeric:tabular-nums;
-          }
-
-          .target-unit {
-            color:#b7c4d3;
-            font-size:15px;
-            font-weight:500;
-          }
-
-          .temp-button {
-            width:44px;
-            height:44px;
-            display:grid;
-            place-items:center;
-            border:1px solid rgba(var(--accent-rgb),.32) !important;
-            border-radius:50% !important;
-            background:
-              linear-gradient(
-                145deg,
-                rgba(255,255,255,.065),
-                rgba(255,255,255,.012)
-              ),
-              rgba(14,20,27,.78) !important;
-            color:rgb(var(--accent-rgb)) !important;
-            box-shadow:
-              inset 0 1px 0 rgba(255,255,255,.08),
-              0 4px 11px rgba(0,0,0,.28);
-            touch-action:none;
-            -webkit-user-select:none;
-            user-select:none;
-          }
-
-          .temp-button ha-icon {
-            --mdc-icon-size:22px;
-            width:22px;
-            height:22px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-          }
-
-          /*
-           * Deliberately no :active scale/brightness/card animation.
-           * Temperature changes are shown only in the target number.
-           */
-          .temp-button:disabled { opacity:.34; }
-
-          @container (max-width:430px) {
-            .thermostat-card {
-              height:auto;
-              min-height:118px;
-              max-height:none;
-              grid-template-columns:50px minmax(0,1fr);
-              grid-template-rows:auto auto;
-              row-gap:7px;
-              padding-block:10px;
-            }
-
-            .current {
-              margin-top:3px;
-              font-size:10.5px;
-            }
-
-            .thermostat-controls {
-              width:min(100%,230px);
-              grid-template-columns:30px minmax(72px,1fr) 30px;
-              gap:7px;
-            }
-
-            .target-display {
-              padding:5px 8px;
-              border-radius:8px;
-            }
-
-            .target {
-              font-size:18px;
-              letter-spacing:-.35px;
-            }
-
-            .target-unit { font-size:10px; }
-
-            .temp-button {
-              width:30px;
-              height:30px;
-            }
-
-            .temp-button ha-icon {
-              --mdc-icon-size:16px;
-              width:16px;
-              height:16px;
-            }
-          }
-
-          @container (max-width:210px) {
-            .thermostat-controls {
-              width:100%;
-              grid-template-columns:28px minmax(58px,1fr) 28px;
-              gap:5px;
-            }
-            .target { font-size:16px; }
-          }
-        </style>
-
-        <div class="card thermostat-card idle">
+        <div class="card grid-2-row thermostat-card idle">
           <div class="icon-shell">
             <ha-icon class="main-icon"></ha-icon>
           </div>
@@ -3196,89 +1341,8 @@
 
     render() {
       this.shadowRoot.innerHTML = `
-        <style>
-          ${BASE_CSS}
-          .navigation-card {
-            --accent-rgb:116,137,255;
-            --accent2-rgb:116,137,255;
-            min-height:150px;
-            background:
-              linear-gradient(135deg,rgba(255,255,255,.09),rgba(255,255,255,.018) 27%,transparent 46%),
-              linear-gradient(90deg,rgba(var(--accent-rgb),.085),rgba(var(--accent-rgb),.035) 52%,transparent 88%),
-              radial-gradient(88% 120% at 110% -8%,rgba(var(--accent-rgb),.07),transparent 56%),
-              linear-gradient(133deg,#22293a 0%,#192131 49%,#111823 100%);
-          }
-          .navigation-card .icon-shell {
-            color:rgb(var(--accent-rgb));
-            border-color:rgba(var(--accent-rgb),.44);
-            box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 0 13px rgba(var(--accent-rgb),.18),0 7px 18px rgba(0,0,0,.30);
-          }
-          .navigation-card .subtext { margin-top:7px; color:#a9b1bf; font-size:15px; }
-          .nav-action {
-            position:relative;
-            z-index:4;
-            width:42px;
-            height:42px;
-            display:grid;
-            place-items:center;
-            border-radius:50%;
-            border:1px solid rgba(var(--accent-rgb),.28);
-            background:rgba(12,18,27,.52);
-            color:rgb(var(--accent-rgb));
-            box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 0 12px rgba(var(--accent-rgb),.11),0 4px 10px rgba(0,0,0,.25);
-            transition:transform .18s ease,box-shadow .18s ease;
-          }
-          .nav-action ha-icon { --mdc-icon-size:23px; width:23px; height:23px; }
-          .navigation-card:active .nav-action { transform:translateX(3px); }
-          @media (hover:hover) { .navigation-card:hover .nav-action { transform:translateX(3px); box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 0 16px rgba(var(--accent-rgb),.20),0 4px 10px rgba(0,0,0,.25); } }
-          @container (max-width:430px) {
-            .navigation-card { height:94px; min-height:94px; max-height:94px; grid-template-columns:50px minmax(0,1fr) auto; }
-            .navigation-card .subtext { margin-top:3px; font-size:10.5px; }
-            .nav-action { width:28px; height:28px; }
-            .nav-action ha-icon { --mdc-icon-size:17px; width:17px; height:17px; }
-          }
-          @container (max-width:150px) {
-            .navigation-card { grid-template-columns:50px minmax(0,1fr); }
-            .nav-action { grid-column:1/-1; justify-self:end; }
-          }
-        
-          @media (max-width:600px) {
-            .navigation-card .subtext {
-              white-space:normal !important;
-              overflow:hidden !important;
-              text-overflow:clip !important;
-              overflow-wrap:anywhere;
-              display:-webkit-box !important;
-              -webkit-box-orient:vertical;
-              -webkit-line-clamp:2;
-              line-clamp:2;
-            }
-
-            @container (max-width:260px) {
-              .navigation-card {
-                grid-template-columns:50px minmax(0,1fr) !important;
-                grid-template-rows:1fr auto !important;
-                row-gap:6px;
-                padding:10px 12px !important;
-              }
-
-              .navigation-card .content {
-                grid-column:2;
-                grid-row:1;
-                min-width:0;
-              }
-
-              .nav-action {
-                grid-column:1 / -1 !important;
-                grid-row:2 !important;
-                justify-self:end;
-                align-self:end;
-              }
-            }
-          }
-
-        </style>
-        <div class="card glow navigation-card">
+        <link rel="stylesheet" href="${GLOW_CARD_CSS_URL}">
+        <div class="card grid-1-row glow navigation-card">
           <div class="icon-shell"><ha-icon class="main-icon"></ha-icon></div>
           <div class="content">
             <div class="name"></div>
@@ -3366,7 +1430,7 @@
     render() {
       if (!this._config) return;
       if (!this.shadowRoot.querySelector('ha-form')) {
-        this.shadowRoot.innerHTML = '<style>:host{display:block}ha-form{display:block;padding:5px 0}</style><ha-form></ha-form>';
+        this.shadowRoot.innerHTML = `<link rel="stylesheet" href="${GLOW_CARD_CSS_URL}"><ha-form></ha-form>`;
         this.shadowRoot.querySelector('ha-form').addEventListener('value-changed', (event) => {
           event.stopPropagation();
           const next = { ...this._config, ...event.detail.value };
@@ -3381,8 +1445,16 @@
       }
       const form = this.shadowRoot.querySelector('ha-form');
       form.hass = this._hass;
-      form.data = this._config;
-      form.schema = this.schema();
+      form.data = Object.fromEntries(Object.entries(this._config).map(([key, value]) =>
+        [key, key.endsWith('_color') && Array.isArray(value) ? JSON.stringify(value) : value]
+      ));
+      const schema = this.schema();
+      if (['basic', 'brightness'].includes(this.kind)) schema.push({ name:'inactive_color', selector:{ text:{} } });
+      form.schema = [
+        ...schema.map((field) => field.name.endsWith('_color')
+          ? { ...field, selector:{ text:{ multiline:true } } } : field),
+        { name:'state_colors', selector:{ object:{} } },
+      ];
       form.computeLabel = (schema) => ({
         entity:'Entity',
         name:'Friendly name / name override',

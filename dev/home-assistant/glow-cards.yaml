@@ -1,0 +1,86 @@
+title: Glow Cards
+views:
+  - title: Samples
+    path: samples
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Lights
+          - type: custom:basic-light-card
+            entity: light.bed_light
+            name: Bed light
+            subtitle: Toggle and hold for details
+          - type: custom:basic-light-card
+            entity: light.ceiling_lights
+            name: Ceiling lights
+          - type: custom:brightness-light-card
+            entity: light.kitchen_lights
+            name: Kitchen dimmer
+          - type: custom:brightness-light-card
+            entity: light.bed_light
+            name: Bed dimmer
+      - type: grid
+        cards:
+          - type: heading
+            heading: People and sensors
+          - type: custom:person-picture-card
+            entity: person.glow_demo
+            name: Demo resident
+            battery_entity: input_number.glow_battery
+          - type: custom:sensor-state-card
+            entity: sensor.outside_temperature
+            active_entity: input_boolean.glow_sensor_active
+            name: Outside temperature
+            active_color: "{{ '#ff7043' if states('sensor.outside_temperature') | float(0) > 20 else '#38a9ff' }}"
+          - type: custom:sensor-state-card
+            entity: sensor.outside_humidity
+            name: Outside humidity
+          - type: entities
+            title: Sample controls
+            entities:
+              - input_boolean.glow_sensor_active
+              - input_number.glow_battery
+      - type: grid
+        cards:
+          - type: heading
+            heading: Climate and navigation
+          - type: custom:thermostat-card
+            entity: climate.hvac
+            name: Cooling
+          - type: custom:thermostat-card
+            entity: climate.heatpump
+            name: Heating
+          - type: custom:navigation-card
+            name: Native cards
+            subtitle: Compare with Home Assistant defaults
+            icon: mdi:view-dashboard
+            navigation_path: /glow-cards/native
+  - title: Native cards
+    path: native
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Home Assistant controls
+          - type: tile
+            entity: light.bed_light
+          - type: tile
+            entity: light.kitchen_lights
+            features:
+              - type: light-brightness
+          - type: thermostat
+            entity: climate.hvac
+          - type: entities
+            entities:
+              - person.glow_demo
+              - sensor.outside_temperature
+              - sensor.outside_humidity
+          - type: custom:navigation-card
+            name: Glow samples
+            icon: mdi:arrow-left
+            navigation_path: /glow-cards/samples
