@@ -48,6 +48,8 @@
       --accent-rgb:255,190,57;
       --accent2-rgb:115,151,255;
       --accent:rgb(var(--accent-rgb));
+      --subicon-edge-x:-5px;
+      --subicon-edge-y:-3px;
 
       position:relative;
       isolation:isolate;
@@ -392,7 +394,7 @@
     }
     .light-card:not(.active) .icon-shell {
       color:#7f8995;
-      border-color:rgba(132,149,170,.22);
+      border-color:rgba(var(--accent-rgb),.22);
       background:
         radial-gradient(circle at 32% 24%,rgba(255,255,255,.09),rgba(255,255,255,.025) 28%,transparent 46%),
         linear-gradient(145deg,#252d35,#19212a 68%,#131a21);
@@ -1561,6 +1563,23 @@
             color:rgb(var(--accent-rgb));
             filter:drop-shadow(0 0 5px rgba(var(--accent-rgb),.62));
           }
+          .card:not(.active) .badge-face {
+            box-shadow:
+              inset 0 1px 0 rgba(255,255,255,.09),
+              0 4px 9px rgba(0,0,0,.36);
+            border-color:rgba(var(--accent-rgb),.22);
+          }
+          .card:not(.active) .badge-face ha-icon {
+            filter:none;
+          }
+          :host(reference-person-picture-card) .card:not(.active) .badge-face,
+          :host(person-picture-card) .card:not(.active) .badge-face {
+            border-color:rgb(var(--accent-rgb));
+          }
+          :host(reference-navigation-card) .card:not(.active) .badge-face,
+          :host(navigation-card) .card:not(.active) .badge-face {
+            border-color:rgba(var(--accent-rgb),.44);
+          }
 
           :host(reference-person-picture-card) .person-away .portrait,
 :host(reference-person-picture-card) .person-away .fallback,
@@ -1711,7 +1730,7 @@
           :host(reference-sensor-state-card) .sensor-card:not(.active) .icon-shell,
 :host(sensor-state-card) .sensor-card:not(.active) .icon-shell {
             color:#7f8995;
-            border-color:rgba(132,149,170,.22);
+            border-color:rgba(var(--accent-rgb),.22);
             background:
               radial-gradient(circle at 32% 24%,rgba(255,255,255,.09),rgba(255,255,255,.025) 28%,transparent 46%),
               linear-gradient(145deg,#252d35,#19212a 68%,#131a21);
@@ -2391,6 +2410,12 @@
 
 /* Legacy phone rules must not restore descriptions in the single-row layout. */
 :host .card.grid-1-row .content .subtext { display:none !important; }
+:host(reference-navigation-card) .card.grid-1-row .content .subtext,
+:host(navigation-card) .card.grid-1-row .content .subtext {
+  display:block !important;
+  margin-top:2px !important;
+  font-size:10px !important;
+}
 
 /* Typical half-section cards (~245px) have room for a trailing action. */
 @container (width > 200px) {
@@ -2442,7 +2467,7 @@
   :host .card .icon-control > button.control:not([hidden]),
   :host .card .icon-control > .nav-action {
     position:absolute !important;
-    inset:auto -5px -3px auto !important;
+    inset:auto var(--subicon-edge-x) var(--subicon-edge-y) auto !important;
     display:grid !important;
     place-items:center;
     width:18px !important;
@@ -2532,6 +2557,14 @@
   }
   :host(reference-person-picture-card) .badge,
   :host(person-picture-card) .badge {
+    top:-3px !important;
     right:-5px !important;
   }
+}
+
+/* The location badge uses the same outward edge offsets as state subicons. */
+:host(reference-person-picture-card) .grid-1-row .badge,
+:host(person-picture-card) .grid-1-row .badge {
+  top:var(--subicon-edge-y) !important;
+  right:var(--subicon-edge-x) !important;
 }

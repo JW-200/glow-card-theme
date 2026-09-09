@@ -12,7 +12,6 @@ views:
           - type: custom:basic-light-card
             entity: light.bed_light
             name: Bed light
-            subtitle: Toggle and hold for details
           - type: custom:basic-light-card
             entity: light.ceiling_lights
             name: Ceiling lights
@@ -32,7 +31,7 @@ views:
             battery_entity: input_number.glow_battery
           - type: custom:sensor-state-card
             entity: sensor.outside_temperature
-            active_entity: input_boolean.glow_sensor_active
+            active_template: "{{ is_state('input_boolean.glow_sensor_active', 'on') }}"
             name: Outside temperature
             active_color: "{{ '#ff7043' if states('sensor.outside_temperature') | float(0) > 20 else '#38a9ff' }}"
           - type: custom:sensor-state-card

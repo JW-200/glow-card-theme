@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '16.0.2';
+  const VERSION = '16.0.8';
   const stylesheetUrl = new URL(`./glow-card.css?v=${VERSION}`, import.meta.url);
   const devRevision = new URL(import.meta.url).searchParams.get('dev');
   if (devRevision) stylesheetUrl.searchParams.set('dev', devRevision);
@@ -13,6 +13,23 @@
   }[char]));
 
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+  const cssColorCache = new Map();
+  const cssColorTriplet = (value) => {
+    const text = String(value).trim();
+    if (cssColorCache.has(text)) return cssColorCache.get(text);
+    if (!globalThis.CSS?.supports?.('color', text)) return null;
+    const context = document.createElement('canvas').getContext('2d');
+    if (!context) return null;
+    context.fillStyle = text;
+    const normalized = context.fillStyle;
+    const hex = normalized.match(/^#([0-9a-f]{6})$/i);
+    const rgb = normalized.match(/^rgba?\(\s*(\d+)\D+(\d+)\D+(\d+)/i);
+    const result = hex
+      ? [0,2,4].map((index) => parseInt(hex[1].slice(index,index + 2),16)).join(',')
+      : rgb ? rgb.slice(1,4).map(Number).join(',') : null;
+    cssColorCache.set(text, result);
+    return result;
+  };
   const rgbTriplet = (value, fallback = [255,190,57]) => {
     const source = value ?? fallback;
     if (Array.isArray(source) && source.length >= 3) {
@@ -26,12 +43,13 @@
       if (parts.length >= 3 && parts.slice(0,3).every(Number.isFinite)) {
         return parts.slice(0,3).map((part) => clamp(Math.round(part),0,255)).join(',');
       }
+      const namedColor = cssColorTriplet(text);
+      if (namedColor) return namedColor;
     }
     return rgbTriplet(fallback, [255,190,57]);
   };
   const stateColor = (config, stateKey, field, fallback) => {
-    const mapped = config?.state_colors && typeof config.state_colors === 'object' ? config.state_colors[stateKey] : null;
-    return rgbTriplet(mapped ?? config?.[field], fallback);
+    return rgbTriplet(config?.[field], fallback);
   };
   // HA publishes normalized rgb_color for its supported color modes.
   const lightColor = (state) => state?.attributes?.rgb_color ?? [255,190,57];
@@ -47,6 +65,11 @@
     state.attributes?.brightness != null ||
     state.attributes?.supported_color_modes?.some((mode) => !['onoff', 'unknown'].includes(mode))
   ));
+  const templateBoolean = (value) => {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value !== 0;
+    return ['true','yes','on','1','active','home','open'].includes(String(value ?? '').trim().toLowerCase());
+  };
 
   const moreInfo = (host, entityId) => {
     if (!entityId) return;
@@ -106,18 +129,21 @@
     set config(value) {
       this.stopColorTemplates();
       this._rawConfig = value;
-      this._config = value ? { ...value, ...(value.state_colors ? { state_colors:{ ...value.state_colors } } : {}) } : null;
+      this._config = value ? { ...value } : null;
       this._colorTemplates = [];
+      this._activeTemplateResult = undefined;
+      this._activeTemplateError = false;
       for (const [key, field] of Object.entries(value || {})) {
-        const entries = key === 'state_colors' && field && typeof field === 'object'
-          ? Object.entries(field).map(([state, color]) => [[key, state], color])
-          : key.endsWith('_color') ? [[[key], field]] : [];
+        const entries = key.endsWith('_color') ? [[[key], field]] : [];
         for (const [path, color] of entries) {
           if (typeof color !== 'string' || !/\{[{%#]/.test(color)) continue;
           this._colorTemplates.push({ path, template:color });
           const target = path.length === 2 ? this._config[path[0]] : this._config;
           delete target[path.at(-1)];
         }
+      }
+      if (typeof value?.active_template === 'string' && value.active_template.trim()) {
+        this._colorTemplates.push({ kind:'active', template:value.active_template });
       }
       this.startColorTemplates();
     }
@@ -139,9 +165,16 @@
       this.stopColorTemplates();
       this._templateConnection = connection;
       const generation = this._templateGeneration;
-      for (const { path, template } of this._colorTemplates) {
+      for (const { kind = 'color', path, template } of this._colorTemplates) {
         const apply = (message) => {
           if (generation !== this._templateGeneration) return;
+          if (kind === 'active') {
+            this._activeTemplateError = Boolean(message.error);
+            this._activeTemplateResult = message.error ? false : message.result;
+            if (message.error) notify(this, `Active template: ${message.error}`);
+            this.update();
+            return;
+          }
           const target = path.length === 2 ? this._config[path[0]] : this._config;
           if (message.error) {
             delete target[path.at(-1)];
@@ -185,7 +218,6 @@
       const isOn = active(state);
       if (isOn && this.config?.icon_on) return this.config.icon_on;
       if (!isOn && this.config?.icon_off) return this.config.icon_off;
-      if (this.config?.icon) return this.config.icon;
       if (state?.attributes?.icon) return state.attributes.icon;
 
       const domain = String(state?.entity_id || this.config?.entity || '').split('.')[0];
@@ -335,7 +367,7 @@
       this.shadowRoot.querySelector('.name').textContent = this.name(state,'Light');
       this.shadowRoot.querySelector('.state').textContent = isAvailable ? (isOn ? 'On' : 'Off') : 'Unavailable';
       const sub = this.shadowRoot.querySelector('.subtext');
-      sub.textContent = this.config.subtitle || '';
+      sub.textContent = '';
       sub.hidden = !sub.textContent;
       this.shadowRoot.querySelector('.main-icon').icon = this.stateIcon(state, ICONS.light);
       const control = this.shadowRoot.querySelector('button.control');
@@ -454,10 +486,6 @@
     }
 
     brightnessEntityId() {
-      if (this.config?.brightness_entity) {
-        return this.config.brightness_entity;
-      }
-
       return this.config?.entity?.startsWith('light.')
         ? this.config.entity
         : null;
@@ -629,7 +657,7 @@
           : 'Unavailable';
 
       const sub = this.shadowRoot.querySelector('.subtext');
-      sub.textContent = this.config.subtitle || '';
+      sub.textContent = '';
       sub.hidden = !sub.textContent;
 
       this.shadowRoot.querySelector('.main-icon').icon =
@@ -729,7 +757,7 @@
       const picture = state.attributes?.entity_picture;
       this.shadowRoot.querySelector('.avatar').innerHTML = picture
         ? `<img class="portrait" alt="" src="${escapeHtml(picture)}"><span class="badge badge-face" aria-hidden="true"><ha-icon icon="${badgeIcon}"></ha-icon></span>`
-        : `<div class="fallback"><ha-icon icon="${escapeHtml(this.config.icon || state.attributes?.icon || ICONS.person)}"></ha-icon></div><span class="badge badge-face" aria-hidden="true"><ha-icon icon="${badgeIcon}"></ha-icon></span>`;
+        : `<div class="fallback"><ha-icon icon="${escapeHtml(state.attributes?.icon || ICONS.person)}"></ha-icon></div><span class="badge badge-face" aria-hidden="true"><ha-icon icon="${badgeIcon}"></ha-icon></span>`;
 
       const battery = this.shadowRoot.querySelector('.battery-status');
       const batteryId = this.config.battery_entity;
@@ -803,22 +831,13 @@
           : String(state.state))
         : 'Unavailable';
 
-      const activityState = this.config.active_entity ? this.entity(this.config.active_entity) : null;
-      const activityAvailable = this.config.active_entity ? available(activityState) : true;
-      const activitySource = activityState || state;
-      const exactActiveState =
-        this.config.active_state != null && String(this.config.active_state).trim() !== ''
-          ? String(this.config.active_state)
-          : null;
-
-      const isActive = this.config.active_entity
-        ? Boolean(
-            activityAvailable &&
-            (exactActiveState != null
-              ? String(activityState.state) === exactActiveState
-              : active(activityState))
-          )
+      const usesActiveTemplate =
+        typeof this.config.active_template === 'string' &&
+        this.config.active_template.trim() !== '';
+      const isActive = usesActiveTemplate
+        ? templateBoolean(this._activeTemplateResult)
         : active(state);
+      const activitySource = state;
 
       const activityKey = String(activitySource?.state ?? (isActive ? 'active' : 'inactive'));
       const sensorAccent = isActive
@@ -829,7 +848,7 @@
       card.classList.toggle('active', isActive);
       card.classList.toggle(
         'activity-unavailable',
-        Boolean(this.config.active_entity && !activityAvailable)
+        Boolean(usesActiveTemplate && this._activeTemplateError)
       );
       card.classList.toggle('unavailable', !isAvailable);
 
@@ -849,14 +868,13 @@
         (isActive
           ? (this.config.icon_active || this.config.icon_on)
           : (this.config.icon_inactive || this.config.icon_off)) ||
-        this.config.icon ||
         state.attributes?.icon ||
         ICONS.sensor;
 
       this.shadowRoot.querySelector('.main-icon').icon = sensorIcon;
 
-      const activityText = this.config.active_entity
-        ? `; activity ${activityAvailable ? String(activityState.state) : 'unavailable'}`
+      const activityText = usesActiveTemplate
+        ? `; active ${isActive ? 'yes' : 'no'}`
         : '';
 
       card.setAttribute(
@@ -1263,7 +1281,6 @@
       card.classList.toggle('unavailable', !isAvailable);
 
       const icon =
-        this.config.icon ||
         (
           visual === 'heating'
             ? this.config.icon_heating
@@ -1399,15 +1416,14 @@
         { name:'entity', required:true, selector:{ entity:{} } },
         { name:'name', selector:{ text:{} } },
       ];
-      if (this.kind === 'basic') return [...common, { name:'subtitle', selector:{ text:{} } }, { name:'icon', selector:{ icon:{} } }, { name:'icon_on', selector:{ icon:{} } }, { name:'icon_off', selector:{ icon:{} } }, { name:'active_color', selector:{ color_rgb:{} } }];
-      if (this.kind === 'brightness') return [...common, { name:'brightness_entity', selector:{ entity:{ domain:'light' } } }, { name:'subtitle', selector:{ text:{} } }, { name:'icon', selector:{ icon:{} } }, { name:'icon_on', selector:{ icon:{} } }, { name:'icon_off', selector:{ icon:{} } }, { name:'active_color', selector:{ color_rgb:{} } }];
-      if (this.kind === 'person') return [...common, { name:'battery_entity', selector:{ entity:{} } }, { name:'icon', selector:{ icon:{} } }, { name:'home_color', selector:{ color_rgb:{} } }, { name:'zone_color', selector:{ color_rgb:{} } }, { name:'away_color', selector:{ color_rgb:{} } }, { name:'unknown_color', selector:{ color_rgb:{} } }];
-      if (this.kind === 'sensor') return [...common, { name:'unit', selector:{ text:{} } }, { name:'active_entity', selector:{ entity:{} } }, { name:'active_state', selector:{ text:{} } }, { name:'icon', selector:{ icon:{} } }, { name:'icon_active', selector:{ icon:{} } }, { name:'icon_inactive', selector:{ icon:{} } }, { name:'active_color', selector:{ color_rgb:{} } }];
+      if (this.kind === 'basic') return [...common, { name:'icon_on', selector:{ icon:{} } }, { name:'icon_off', selector:{ icon:{} } }, { name:'active_color', selector:{ color_rgb:{} } }];
+      if (this.kind === 'brightness') return [...common, { name:'icon_on', selector:{ icon:{} } }, { name:'icon_off', selector:{ icon:{} } }, { name:'active_color', selector:{ color_rgb:{} } }];
+      if (this.kind === 'person') return [...common, { name:'battery_entity', selector:{ entity:{} } }, { name:'home_color', selector:{ color_rgb:{} } }, { name:'zone_color', selector:{ color_rgb:{} } }, { name:'away_color', selector:{ color_rgb:{} } }, { name:'unknown_color', selector:{ color_rgb:{} } }];
+      if (this.kind === 'sensor') return [...common, { name:'unit', selector:{ text:{} } }, { name:'active_template', selector:{ template:{} } }, { name:'icon_active', selector:{ icon:{} } }, { name:'icon_inactive', selector:{ icon:{} } }, { name:'active_color', selector:{ color_rgb:{} } }];
       if (this.kind === 'thermostat') return [
         { name:'entity', required:true, selector:{ entity:{ domain:'climate' } } },
         { name:'name', selector:{ text:{} } },
         { name:'temperature_step', selector:{ number:{ min:0.1, max:5, step:0.1, mode:'box' } } },
-        { name:'icon', selector:{ icon:{} } },
         { name:'icon_heating', selector:{ icon:{} } },
         { name:'icon_cooling', selector:{ icon:{} } },
         { name:'icon_idle', selector:{ icon:{} } },
@@ -1422,7 +1438,6 @@
         { name:'name', selector:{ text:{} } },
         { name:'subtitle', selector:{ text:{} } },
         { name:'icon', selector:{ icon:{} } },
-        { name:'active_color', selector:{ color_rgb:{} } },
       ];
       return common;
     }
@@ -1434,7 +1449,7 @@
         this.shadowRoot.querySelector('ha-form').addEventListener('value-changed', (event) => {
           event.stopPropagation();
           const next = { ...this._config, ...event.detail.value };
-          for (const key of ['name','friendly_name','subtitle','subtext','icon','icon_on','icon_off','icon_active','icon_inactive','icon_heating','icon_cooling','icon_idle','unit','brightness_entity','battery_entity','active_entity','active_state','temperature_step','navigation_path','active_color','inactive_color','home_color','zone_color','away_color','unknown_color','heating_color','cooling_color','idle_color','off_color']) {
+          for (const key of ['name','friendly_name','subtitle','subtext','icon','icon_on','icon_off','icon_active','icon_inactive','icon_heating','icon_cooling','icon_idle','unit','brightness_entity','battery_entity','active_entity','active_state','active_template','temperature_step','navigation_path','active_color','inactive_color','home_color','zone_color','away_color','unknown_color','heating_color','cooling_color','idle_color','off_color']) {
             if (next[key] === '' || next[key] == null) delete next[key];
           }
           this._config = next;
@@ -1450,11 +1465,8 @@
       ));
       const schema = this.schema();
       if (['basic', 'brightness'].includes(this.kind)) schema.push({ name:'inactive_color', selector:{ text:{} } });
-      form.schema = [
-        ...schema.map((field) => field.name.endsWith('_color')
-          ? { ...field, selector:{ text:{ multiline:true } } } : field),
-        { name:'state_colors', selector:{ object:{} } },
-      ];
+      form.schema = schema.map((field) => field.name.endsWith('_color')
+        ? { ...field, selector:{ template:{} } } : field);
       form.computeLabel = (schema) => ({
         entity:'Entity',
         name:'Friendly name / name override',
@@ -1463,11 +1475,9 @@
         icon_on:'On-state icon override',
         icon_off:'Off-state icon override',
         unit:'Unit override',
-        active_entity:'Entity that controls active state',
-        active_state:'Exact active state (blank = standard active states)',
+        active_template:'Active template (true / false)',
         icon_active:'Active-state icon override',
         icon_inactive:'Inactive-state icon override',
-        brightness_entity:'Brightness light',
         battery_entity:'Battery entity',
         temperature_step:'Temperature adjustment step',
         icon_heating:'Heating icon override',
