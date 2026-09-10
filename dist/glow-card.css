@@ -540,8 +540,7 @@
     }
 
 /* reference-basic-light-card */
-:host(reference-basic-light-card) .card,
-:host(basic-light-card) .card {
+:host(:is(reference-basic-light-card, basic-light-card)) .card {
             --accent-rgb:255,190,57;
             --accent2-rgb:111,142,204;
             background:
@@ -551,30 +550,26 @@
               linear-gradient(133deg,#2a2b2c 0%,#20252b 48%,#131a22 100%);
           }
           @container (max-width:150px) {
-            :host(reference-basic-light-card) button.control,
-:host(basic-light-card) button.control { grid-column:1 / -1; justify-self:end; }
+            :host(:is(reference-basic-light-card, basic-light-card)) button.control { grid-column:1 / -1; justify-self:end; }
           }
         
           @media (max-width:600px) {
             @container (max-width:260px) {
-              :host(reference-basic-light-card) .card,
-:host(basic-light-card) .card {
+              :host(:is(reference-basic-light-card, basic-light-card)) .card {
                 grid-template-columns:50px minmax(0,1fr) !important;
                 grid-template-rows:1fr auto !important;
                 row-gap:7px;
                 padding:10px 12px !important;
               }
 
-              :host(reference-basic-light-card) button.control,
-:host(basic-light-card) button.control {
+              :host(:is(reference-basic-light-card, basic-light-card)) button.control {
                 grid-column:1 / -1 !important;
                 grid-row:2 !important;
                 justify-self:end;
                 align-self:end;
               }
 
-              :host(reference-basic-light-card) .content,
-:host(basic-light-card) .content {
+              :host(:is(reference-basic-light-card, basic-light-card)) .content {
                 grid-column:2;
                 grid-row:1;
                 min-width:0;
@@ -588,8 +583,7 @@
            * The icon spans the two desktop rows so the slider no longer forces
            * the entire card to become taller than a normal light/person/sensor.
            */
-          :host(reference-brightness-light-card) .card,
-:host(brightness-light-card) .card {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) .card {
             --accent-rgb:255,190,57;
             --accent2-rgb:111,142,204;
 
@@ -631,15 +625,13 @@
               linear-gradient(133deg,#2b2b2c 0%,#21252a 47%,#131a22 100%);
           }
 
-          :host(reference-brightness-light-card) .icon-shell,
-:host(brightness-light-card) .icon-shell {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) .icon-shell {
             grid-column:1;
             grid-row:1;
             align-self:center;
           }
 
-          :host(reference-brightness-light-card) .content,
-:host(brightness-light-card) .content {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) .content {
             grid-column:2;
             grid-row:1;
             align-self:center;
@@ -650,8 +642,7 @@
            * The RGB accent itself stays the configured color; only its visual
            * intensity fades down with the brightness percentage.
            */
-          :host(reference-brightness-light-card) .light-card.active,
-:host(brightness-light-card) .light-card.active {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) .light-card.active {
             background:
               linear-gradient(135deg,rgba(255,255,255,.115),rgba(255,255,255,.032) 25%,transparent 43%),
               linear-gradient(
@@ -681,13 +672,11 @@
               ) !important;
           }
 
-          :host(reference-brightness-light-card) .light-card.active::before,
-:host(brightness-light-card) .light-card.active::before {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) .light-card.active::before {
             opacity:var(--dim-before);
           }
 
-          :host(reference-brightness-light-card) .light-card.active::after,
-:host(brightness-light-card) .light-card.active::after {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) .light-card.active::after {
             background:linear-gradient(
               108deg,
               rgba(var(--accent-rgb),var(--dim-edge1)) 0%,
@@ -700,8 +689,7 @@
               drop-shadow(0 0 7px rgba(var(--accent-rgb),var(--dim-edge-glow2)));
           }
 
-          :host(reference-brightness-light-card) .light-card.active.glow,
-:host(brightness-light-card) .light-card.active.glow {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) .light-card.active.glow {
             box-shadow:
               inset 0 1px 0 rgba(255,255,255,.18),
               inset 0 -1px 0 rgba(0,0,0,.46),
@@ -711,8 +699,7 @@
               0 12px 28px rgba(0,0,0,.42);
           }
 
-          :host(reference-brightness-light-card) .light-card.active .icon-shell,
-:host(brightness-light-card) .light-card.active .icon-shell {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) .light-card.active .icon-shell {
             color:rgb(var(--accent-rgb));
             border-color:rgba(var(--accent-rgb),var(--dim-icon-border));
             background:
@@ -737,16 +724,14 @@
               0 7px 18px rgba(0,0,0,.30);
           }
 
-          :host(reference-brightness-light-card) .light-card.active .icon-shell ha-icon,
-:host(brightness-light-card) .light-card.active .icon-shell ha-icon {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) .light-card.active .icon-shell ha-icon {
             filter:
               drop-shadow(0 1px 2px rgba(0,0,0,.42))
               drop-shadow(0 0 9px rgba(var(--accent-rgb),var(--dim-icon-filter)));
           }
 
           @media (hover:hover) {
-            :host(reference-brightness-light-card) .light-card.active:hover,
-:host(brightness-light-card) .light-card.active:hover {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .light-card.active:hover {
               box-shadow:
                 inset 0 1px 0 rgba(255,255,255,.20),
                 inset 18px 0 50px rgba(var(--accent-rgb),.025),
@@ -756,8 +741,7 @@
             }
           }
 
-          :host(reference-brightness-light-card) .slider-row,
-:host(brightness-light-card) .slider-row {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) .slider-row {
             position:absolute;
             z-index:7;
             left:24px;
@@ -769,8 +753,7 @@
             height:32px;
           }
 
-          :host(reference-brightness-light-card) .slider-wrap,
-:host(brightness-light-card) .slider-wrap {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) .slider-wrap {
             position:relative;
             width:100%;
             min-width:0;
@@ -779,8 +762,7 @@
             align-items:center;
           }
 
-          :host(reference-brightness-light-card) .track,
-:host(brightness-light-card) .track {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) .track {
             position:absolute;
             left:1px;
             right:1px;
@@ -793,8 +775,7 @@
               inset 0 1px 0 rgba(255,255,255,.04);
           }
 
-          :host(reference-brightness-light-card) .track::before,
-:host(brightness-light-card) .track::before {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) .track::before {
             content:'';
             position:absolute;
             inset:0 auto 0 0;
@@ -811,8 +792,7 @@
               inset 0 1px 0 rgba(255,255,255,.36);
           }
 
-          :host(reference-brightness-light-card) input[type=range],
-:host(brightness-light-card) input[type=range] {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) input[type=range] {
             position:relative;
             z-index:3;
             width:100%;
@@ -825,20 +805,17 @@
             cursor:pointer;
           }
 
-          :host(reference-brightness-light-card) input[type=range]::-webkit-slider-runnable-track,
-:host(brightness-light-card) input[type=range]::-webkit-slider-runnable-track {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) input[type=range]::-webkit-slider-runnable-track {
             height:9px;
             background:transparent;
           }
 
-          :host(reference-brightness-light-card) input[type=range]::-moz-range-track,
-:host(brightness-light-card) input[type=range]::-moz-range-track {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) input[type=range]::-moz-range-track {
             height:9px;
             background:transparent;
           }
 
-          :host(reference-brightness-light-card) input[type=range]::-webkit-slider-thumb,
-:host(brightness-light-card) input[type=range]::-webkit-slider-thumb {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) input[type=range]::-webkit-slider-thumb {
             appearance:none;
             -webkit-appearance:none;
             width:28px;
@@ -859,8 +836,7 @@
               0 5px 9px rgba(0,0,0,.42);
           }
 
-          :host(reference-brightness-light-card) input[type=range]::-moz-range-thumb,
-:host(brightness-light-card) input[type=range]::-moz-range-thumb {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) input[type=range]::-moz-range-thumb {
             width:24px;
             height:24px;
             border:3px solid rgb(var(--accent-rgb));
@@ -877,17 +853,14 @@
               0 5px 9px rgba(0,0,0,.42);
           }
 
-          :host(reference-brightness-light-card) input[type=range]:disabled,
-:host(brightness-light-card) input[type=range]:disabled {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) input[type=range]:disabled {
             opacity:.35;
             cursor:default;
           }
 
-          :host(reference-brightness-light-card) input[type=range]:focus-visible,
-:host(brightness-light-card) input[type=range]:focus-visible { outline:none; }
+          :host(:is(reference-brightness-light-card, brightness-light-card)) input[type=range]:focus-visible { outline:none; }
 
-          :host(reference-brightness-light-card) .percent,
-:host(brightness-light-card) .percent {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) .percent {
             position:absolute;
             right:0;
             bottom:36px;
@@ -918,41 +891,35 @@
            * The tooltip is only enabled by the phone container query below.
            * On desktop/tablet the permanent percentage badge is retained.
            */
-          :host(reference-brightness-light-card) .slider-tooltip,
-:host(brightness-light-card) .slider-tooltip {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) .slider-tooltip {
             display:none;
           }
 
-          :host(reference-brightness-light-card) .light-card:not(.active) .track,
-:host(brightness-light-card) .light-card:not(.active) .track {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) .light-card:not(.active) .track {
             background:linear-gradient(180deg,#252b32,#1c2229);
             box-shadow:
               inset 0 2px 4px rgba(0,0,0,.50),
               inset 0 1px 0 rgba(255,255,255,.025);
           }
 
-          :host(reference-brightness-light-card) .light-card:not(.active) .track::before,
-:host(brightness-light-card) .light-card:not(.active) .track::before {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) .light-card:not(.active) .track::before {
             background:#687482;
             box-shadow:none;
           }
 
-          :host(reference-brightness-light-card) .light-card:not(.active) input[type=range]::-webkit-slider-thumb,
-:host(brightness-light-card) .light-card:not(.active) input[type=range]::-webkit-slider-thumb {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) .light-card:not(.active) input[type=range]::-webkit-slider-thumb {
             border-color:#7b8794;
             box-shadow:
               0 0 0 1px rgba(255,255,255,.12),
               0 4px 8px rgba(0,0,0,.40);
           }
 
-          :host(reference-brightness-light-card) .light-card:not(.active) input[type=range]::-moz-range-thumb,
-:host(brightness-light-card) .light-card:not(.active) input[type=range]::-moz-range-thumb {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) .light-card:not(.active) input[type=range]::-moz-range-thumb {
             border-color:#7b8794;
             box-shadow:0 4px 8px rgba(0,0,0,.40);
           }
 
-          :host(reference-brightness-light-card) .light-card:not(.active) .percent,
-:host(brightness-light-card) .light-card:not(.active) .percent {
+          :host(:is(reference-brightness-light-card, brightness-light-card)) .light-card:not(.active) .percent {
             border-color:rgba(135,149,166,.27);
             background:
               linear-gradient(
@@ -966,37 +933,7 @@
               inset 0 1px 0 rgba(255,255,255,.055),
               0 4px 9px rgba(0,0,0,.24);
           }
-
-          :host(reference-brightness-light-card) .power-toggle,
-:host(brightness-light-card) .power-toggle { display:none; }
-          :host(reference-brightness-light-card) .power-only .slider-row,
-:host(brightness-light-card) .power-only .slider-row { display:none; }
-          :host(reference-brightness-light-card) .power-only,
-:host(brightness-light-card) .power-only {
-            height:150px;
-            min-height:150px;
-            max-height:150px;
-            grid-template-columns:82px minmax(0,1fr) auto;
-            grid-template-rows:auto;
-            padding:22px 25px;
-          }
-          :host(reference-brightness-light-card) .power-only .icon-shell,
-:host(brightness-light-card) .power-only .icon-shell {
-            grid-column:1;
-            grid-row:1;
-          }
-          :host(reference-brightness-light-card) .power-only .content,
-:host(brightness-light-card) .power-only .content {
-            grid-column:2;
-            grid-row:1;
-            align-self:center;
-          }
-          :host(reference-brightness-light-card) .power-only .power-toggle,
-:host(brightness-light-card) .power-only .power-toggle {
-            display:block;
-            grid-column:3;
-            grid-row:1;
-          }
+          :host(:is(reference-brightness-light-card, brightness-light-card)) .power-only .slider-row { display:none; }
 
           /* Slider interaction feedback. */
 
@@ -1013,8 +950,7 @@
              * one-action cards because the slider is a second control row.
              * 94px keeps the phone layout compact without crushing the text.
              */
-            :host(reference-brightness-light-card) .card,
-:host(brightness-light-card) .card {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .card {
               height:94px;
               min-height:94px;
               max-height:94px;
@@ -1026,8 +962,7 @@
               border-radius:18px;
             }
 
-            :host(reference-brightness-light-card) .icon-shell,
-:host(brightness-light-card) .icon-shell {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .icon-shell {
               grid-column:1;
               grid-row:1;
               align-self:center;
@@ -1036,15 +971,13 @@
               height:46px;
             }
 
-            :host(reference-brightness-light-card) .icon-shell ha-icon,
-:host(brightness-light-card) .icon-shell ha-icon {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .icon-shell ha-icon {
               --mdc-icon-size:24px;
               width:24px;
               height:24px;
             }
 
-            :host(reference-brightness-light-card) .content,
-:host(brightness-light-card) .content {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .content {
               grid-column:2;
               grid-row:1;
               align-self:center;
@@ -1052,22 +985,19 @@
               padding-bottom:0;
             }
 
-            :host(reference-brightness-light-card) .content .name,
-:host(brightness-light-card) .content .name {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .content .name {
               font-size:14.5px;
               line-height:1.08;
               letter-spacing:-.10px;
             }
 
-            :host(reference-brightness-light-card) .content .state,
-:host(brightness-light-card) .content .state {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .content .state {
               margin-top:2px;
               font-size:11.5px;
               line-height:1.08;
             }
 
-            :host(reference-brightness-light-card) .content .subtext,
-:host(brightness-light-card) .content .subtext {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .content .subtext {
               margin-top:2px;
               font-size:10px;
               line-height:1.05;
@@ -1088,8 +1018,7 @@
              * Match the target layout: the slider begins at the text column,
              * not underneath the icon, and runs to the right card padding.
              */
-            :host(reference-brightness-light-card) .slider-row,
-:host(brightness-light-card) .slider-row {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .slider-row {
               position:absolute;
               z-index:8;
               left:12px;
@@ -1101,8 +1030,7 @@
               height:18px;
             }
 
-            :host(reference-brightness-light-card) .slider-wrap,
-:host(brightness-light-card) .slider-wrap {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .slider-wrap {
               position:relative;
               width:100%;
               min-width:0;
@@ -1111,32 +1039,27 @@
               align-items:center;
             }
 
-            :host(reference-brightness-light-card) .track,
-:host(brightness-light-card) .track {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .track {
               left:0;
               right:0;
               height:5px;
             }
 
-            :host(reference-brightness-light-card) input[type=range],
-:host(brightness-light-card) input[type=range] {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) input[type=range] {
               width:100%;
               min-width:0;
               height:18px;
             }
 
-            :host(reference-brightness-light-card) input[type=range]::-webkit-slider-runnable-track,
-:host(brightness-light-card) input[type=range]::-webkit-slider-runnable-track {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) input[type=range]::-webkit-slider-runnable-track {
               height:5px;
             }
 
-            :host(reference-brightness-light-card) input[type=range]::-moz-range-track,
-:host(brightness-light-card) input[type=range]::-moz-range-track {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) input[type=range]::-moz-range-track {
               height:5px;
             }
 
-            :host(reference-brightness-light-card) input[type=range]::-webkit-slider-thumb,
-:host(brightness-light-card) input[type=range]::-webkit-slider-thumb {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) input[type=range]::-webkit-slider-thumb {
               width:18px;
               height:18px;
               margin-top:-6.5px;
@@ -1145,8 +1068,7 @@
               transition:none !important;
             }
 
-            :host(reference-brightness-light-card) input[type=range]::-moz-range-thumb,
-:host(brightness-light-card) input[type=range]::-moz-range-thumb {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) input[type=range]::-moz-range-thumb {
               width:18px;
               height:18px;
               border-width:2px;
@@ -1154,13 +1076,11 @@
               transition:none !important;
             }
 
-            :host(reference-brightness-light-card) .percent,
-:host(brightness-light-card) .percent {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .percent {
               display:none;
             }
 
-            :host(reference-brightness-light-card) .slider-tooltip,
-:host(brightness-light-card) .slider-tooltip {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .slider-tooltip {
               position:absolute;
               z-index:12;
               display:block;
@@ -1193,8 +1113,7 @@
               transition:opacity .10s linear;
             }
 
-            :host(reference-brightness-light-card) .slider-tooltip::after,
-:host(brightness-light-card) .slider-tooltip::after {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .slider-tooltip::after {
               content:'';
               position:absolute;
               left:50%;
@@ -1207,8 +1126,7 @@
               transform:translate(-50%,-4px) rotate(45deg);
             }
 
-            :host(reference-brightness-light-card) .card.slider-interacting .slider-tooltip,
-:host(brightness-light-card) .card.slider-interacting .slider-tooltip {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .card.slider-interacting .slider-tooltip {
               opacity:1;
               transform:translateX(-50%);
             }
@@ -1217,8 +1135,7 @@
              * Non-dimmable fallback stays the same compact height as a
              * standard light card because it has no slider row.
              */
-            :host(reference-brightness-light-card) .power-only,
-:host(brightness-light-card) .power-only {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .power-only {
               height:94px;
               min-height:94px;
               max-height:94px;
@@ -1228,24 +1145,21 @@
               padding:9px 12px;
             }
 
-            :host(reference-brightness-light-card) .power-only .icon-shell,
-:host(brightness-light-card) .power-only .icon-shell {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .power-only .icon-shell {
               grid-column:1;
               grid-row:1;
               width:44px;
               height:44px;
             }
 
-            :host(reference-brightness-light-card) .power-only .content,
-:host(brightness-light-card) .power-only .content {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .power-only .content {
               grid-column:2;
               grid-row:1;
               align-self:center;
               padding-bottom:0;
             }
 
-            :host(reference-brightness-light-card) .power-only .power-toggle,
-:host(brightness-light-card) .power-only .power-toggle {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .power-only .power-toggle {
               display:block;
               position:static;
               grid-column:3;
@@ -1264,16 +1178,14 @@
              * so it remains practical to drag. The card gains only a few
              * pixels instead of collapsing the slider.
              */
-            :host(reference-brightness-light-card) .card:not(.power-only),
-:host(brightness-light-card) .card:not(.power-only) {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) {
               height:94px;
               min-height:94px;
               max-height:94px;
               padding-bottom:27px;
             }
 
-            :host(reference-brightness-light-card) .card:not(.power-only) .slider-row,
-:host(brightness-light-card) .card:not(.power-only) .slider-row {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) .slider-row {
               left:8px;
               right:8px;
               bottom:7px;
@@ -1290,8 +1202,7 @@
               text-overflow:ellipsis;
             }
 
-            :host(reference-brightness-light-card) .power-only,
-:host(brightness-light-card) .power-only {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .power-only {
               height:94px;
               min-height:94px;
               max-height:94px;
@@ -1301,8 +1212,7 @@
               padding:8px;
             }
 
-            :host(reference-brightness-light-card) .power-only .power-toggle,
-:host(brightness-light-card) .power-only .power-toggle {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .power-only .power-toggle {
               grid-column:3;
               grid-row:1;
               justify-self:end;
@@ -1321,13 +1231,11 @@
           }
         
           @media (max-width:600px) {
-            :host(reference-brightness-light-card) .card:not(.power-only),
-:host(brightness-light-card) .card:not(.power-only) {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) {
               padding-bottom:31px;
             }
 
-            :host(reference-brightness-light-card) .card:not(.power-only) .content .name,
-:host(brightness-light-card) .card:not(.power-only) .content .name {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) .content .name {
               white-space:nowrap !important;
               overflow:hidden !important;
               text-overflow:ellipsis !important;
@@ -1347,8 +1255,7 @@
               text-overflow:ellipsis !important;
             }
 
-            :host(reference-brightness-light-card) .card:not(.power-only) .content .subtext,
-:host(brightness-light-card) .card:not(.power-only) .content .subtext {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) .content .subtext {
               display:block;
               -webkit-box-orient:vertical;
               -webkit-line-clamp:1;
@@ -1356,33 +1263,23 @@
             }
 
             /* Keep the full-width slider across the phone card. */
-            :host(reference-brightness-light-card) .card:not(.power-only) .slider-row,
-:host(brightness-light-card) .card:not(.power-only) .slider-row {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) .slider-row {
               left:12px;
               right:12px;
               bottom:8px;
-            }
-
-            :host(reference-brightness-light-card) .power-only,
-:host(brightness-light-card) .power-only {
-              height:112px !important;
-              min-height:112px !important;
-              max-height:112px !important;
             }
           }
 
         
           @media (max-width:600px) {
-            :host(reference-brightness-light-card) .card:not(.power-only),
-:host(brightness-light-card) .card:not(.power-only) {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) {
               height:112px !important;
               min-height:112px !important;
               max-height:112px !important;
               padding-bottom:31px !important;
             }
 
-            :host(reference-brightness-light-card) .card:not(.power-only) .content .name,
-:host(brightness-light-card) .card:not(.power-only) .content .name {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) .content .name {
               white-space:nowrap !important;
               overflow:hidden !important;
               text-overflow:ellipsis !important;
@@ -1394,84 +1291,45 @@
             }
 
             /* Slider uses the full inner width of the card. */
-            :host(reference-brightness-light-card) .card:not(.power-only) .slider-row,
-:host(brightness-light-card) .card:not(.power-only) .slider-row {
+            :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) .slider-row {
               left:12px !important;
               right:12px !important;
               bottom:8px !important;
               width:auto !important;
             }
 
-            :host(reference-brightness-light-card) .power-only,
-:host(brightness-light-card) .power-only {
-              height:112px !important;
-              min-height:112px !important;
-              max-height:112px !important;
-            }
-
             @container (max-width:260px) {
-              :host(reference-brightness-light-card) .card:not(.power-only),
-:host(brightness-light-card) .card:not(.power-only) {
+              :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) {
                 height:128px !important;
                 min-height:128px !important;
                 max-height:128px !important;
                 padding-bottom:33px !important;
               }
 
-              :host(reference-brightness-light-card) .card:not(.power-only),
-:host(brightness-light-card) .card:not(.power-only) {
+              :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) {
                 grid-template-columns:50px minmax(0,1fr) !important;
                 grid-template-rows:1fr !important;
               }
 
-              :host(reference-brightness-light-card) .card:not(.power-only) .slider-row,
-:host(brightness-light-card) .card:not(.power-only) .slider-row {
+              :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) .slider-row {
                 left:10px !important;
                 right:10px !important;
                 bottom:9px !important;
-              }
-
-              :host(reference-brightness-light-card) .power-only,
-:host(brightness-light-card) .power-only {
-                height:128px !important;
-                min-height:128px !important;
-                max-height:128px !important;
-                grid-template-columns:50px minmax(0,1fr) !important;
-                grid-template-rows:1fr auto !important;
-                row-gap:7px;
-                padding:10px 12px !important;
-              }
-
-              :host(reference-brightness-light-card) .power-only .power-toggle,
-:host(brightness-light-card) .power-only .power-toggle {
-                grid-column:1 / -1 !important;
-                grid-row:2 !important;
-                justify-self:end;
-                align-self:end;
-              }
-
-              :host(reference-brightness-light-card) .power-only .content,
-:host(brightness-light-card) .power-only .content {
-                grid-column:2 !important;
-                grid-row:1 !important;
               }
             }
           }
 
 /* reference-person-picture-card */
-:host(reference-person-picture-card) .card,
-:host(person-picture-card) .card { grid-template-columns:92px minmax(0,1fr) auto; }
+:host(:is(reference-person-picture-card, person-picture-card)) .card { grid-template-columns:92px minmax(0,1fr) auto; }
 
-          :host(reference-person-picture-card) .person-home,
-:host(person-picture-card) .person-home {
+          :host(:is(reference-person-picture-card, person-picture-card)) .person-home {
             background:
               linear-gradient(135deg,rgba(255,255,255,.105),rgba(255,255,255,.026) 26%,transparent 43%),
               linear-gradient(90deg,rgba(var(--accent-rgb),.115),rgba(var(--accent-rgb),.050) 56%,rgba(var(--accent-rgb),.012) 88%,transparent 100%),
               radial-gradient(122% 158% at -12% 44%,rgba(var(--accent-rgb),.115),transparent 72%),
               linear-gradient(133deg,rgba(24,44,38,.94) 0%,rgba(23,37,37,.95) 44%,rgba(15,25,31,.97) 100%);
           }
-          :host(reference-person-picture-card) .person-zone,
-:host(person-picture-card) .person-zone {
+          :host(:is(reference-person-picture-card, person-picture-card)) .person-zone {
             background:
               linear-gradient(135deg,rgba(255,255,255,.105),rgba(255,255,255,.026) 26%,transparent 43%),
               linear-gradient(90deg,rgba(var(--accent-rgb),.115),rgba(var(--accent-rgb),.050) 56%,rgba(var(--accent-rgb),.012) 88%,transparent 100%),
@@ -1479,23 +1337,20 @@
               linear-gradient(133deg,rgba(27,45,62,.94) 0%,rgba(23,35,50,.95) 44%,rgba(14,23,34,.97) 100%);
           }
           /* Away is deliberately one hue: red only, no purple second accent. */
-          :host(reference-person-picture-card) .person-away,
-:host(person-picture-card) .person-away {
+          :host(:is(reference-person-picture-card, person-picture-card)) .person-away {
             background:
               linear-gradient(135deg,rgba(255,255,255,.095),rgba(255,255,255,.023) 26%,transparent 43%),
               linear-gradient(90deg,rgba(var(--accent-rgb),.130),rgba(var(--accent-rgb),.055) 58%,rgba(var(--accent-rgb),.014) 90%,transparent 100%),
               radial-gradient(124% 158% at -12% 44%,rgba(var(--accent-rgb),.135),transparent 73%),
               linear-gradient(133deg,rgba(48,29,32,.94) 0%,rgba(37,27,30,.95) 46%,rgba(20,22,27,.97) 100%);
           }
-          :host(reference-person-picture-card) .person-unknown,
-:host(person-picture-card) .person-unknown {
+          :host(:is(reference-person-picture-card, person-picture-card)) .person-unknown {
             background:
               linear-gradient(135deg,rgba(255,255,255,.055),rgba(255,255,255,.012) 28%,transparent 44%),
               linear-gradient(133deg,#252b31 0%,#1b2128 48%,#11171e 100%);
           }
 
-          :host(reference-person-picture-card) .avatar,
-:host(person-picture-card) .avatar {
+          :host(:is(reference-person-picture-card, person-picture-card)) .avatar {
             position:relative;
             z-index:3;
             width:82px;
@@ -1522,13 +1377,10 @@
               0 0 25px rgba(var(--accent-rgb),.30),
               0 7px 17px rgba(0,0,0,.34);
           }
-          :host(reference-person-picture-card) .portrait,
-:host(person-picture-card) .portrait { object-fit:cover; object-position:center; }
-          :host(reference-person-picture-card) .fallback ha-icon,
-:host(person-picture-card) .fallback ha-icon { --mdc-icon-size:32px; color:rgb(var(--accent-rgb)); }
+          :host(:is(reference-person-picture-card, person-picture-card)) .portrait { object-fit:cover; object-position:center; }
+          :host(:is(reference-person-picture-card, person-picture-card)) .fallback ha-icon { --mdc-icon-size:32px; color:rgb(var(--accent-rgb)); }
 
-          :host(reference-person-picture-card) .badge,
-:host(person-picture-card) .badge {
+          :host(:is(reference-person-picture-card, person-picture-card)) .badge {
             position:absolute;
             top:-2px;
             right:-2px;
@@ -1572,12 +1424,10 @@
           .card:not(.active) .badge-face ha-icon {
             filter:none;
           }
-          :host(reference-person-picture-card) .card:not(.active) .badge-face,
-          :host(person-picture-card) .card:not(.active) .badge-face {
+          :host(:is(reference-person-picture-card, person-picture-card)) .card:not(.active) .badge-face {
             border-color:rgb(var(--accent-rgb));
           }
-          :host(reference-navigation-card) .card:not(.active) .badge-face,
-          :host(navigation-card) .card:not(.active) .badge-face {
+          :host(:is(reference-navigation-card, navigation-card)) .card:not(.active) .badge-face {
             border-color:rgba(var(--accent-rgb),.44);
           }
 
@@ -1597,8 +1447,7 @@
           }
 
           /* Battery is intentionally only a symbol: no pill, ring or visible percentage. */
-          :host(reference-person-picture-card) .battery-status,
-:host(person-picture-card) .battery-status {
+          :host(:is(reference-person-picture-card, person-picture-card)) .battery-status {
             position:relative;
             z-index:6;
             width:32px;
@@ -1615,50 +1464,36 @@
             opacity:.92;
             transition:opacity .16s ease,transform .16s ease;
           }
-          @media (hover:hover) { :host(reference-person-picture-card) .battery-status:hover,
-:host(person-picture-card) .battery-status:hover { opacity:1; } }
-          :host(reference-person-picture-card) .battery-status:active,
-:host(person-picture-card) .battery-status:active { transform:scale(.92); }
-          :host(reference-person-picture-card) .battery-status ha-icon,
-:host(person-picture-card) .battery-status ha-icon {
+          @media (hover:hover) { :host(:is(reference-person-picture-card, person-picture-card)) .battery-status:hover { opacity:1; } }
+          :host(:is(reference-person-picture-card, person-picture-card)) .battery-status:active { transform:scale(.92); }
+          :host(:is(reference-person-picture-card, person-picture-card)) .battery-status ha-icon {
             --mdc-icon-size:26px;
             width:26px;
             height:26px;
             color:rgb(var(--accent-rgb));
             filter:drop-shadow(0 0 4px rgba(var(--accent-rgb),.20));
           }
-          :host(reference-person-picture-card) .battery-status[hidden],
-:host(person-picture-card) .battery-status[hidden] { display:none !important; }
+          :host(:is(reference-person-picture-card, person-picture-card)) .battery-status[hidden] { display:none !important; }
 
           @container (max-width:430px) {
-            :host(reference-person-picture-card) .card,
-:host(person-picture-card) .card { grid-template-columns:50px minmax(0,1fr) auto; height:94px; min-height:94px; max-height:94px; }
-            :host(reference-person-picture-card) .avatar,
-:host(person-picture-card) .avatar { width:46px; height:46px; }
+            :host(:is(reference-person-picture-card, person-picture-card)) .card { grid-template-columns:50px minmax(0,1fr) auto; height:94px; min-height:94px; max-height:94px; }
+            :host(:is(reference-person-picture-card, person-picture-card)) .avatar { width:46px; height:46px; }
             :host(reference-person-picture-card) .portrait,
 :host(reference-person-picture-card) .fallback,
 :host(person-picture-card) .portrait,
 :host(person-picture-card) .fallback { width:42px; height:42px; }
-            :host(reference-person-picture-card) .badge,
-:host(person-picture-card) .badge { width:19px; height:19px; border-width:1.5px; }
-            :host(reference-person-picture-card) .badge ha-icon,
-:host(person-picture-card) .badge ha-icon { --mdc-icon-size:10px; width:10px; height:10px; }
-            :host(reference-person-picture-card) .battery-status,
-:host(person-picture-card) .battery-status { width:25px; height:25px; min-width:25px; }
-            :host(reference-person-picture-card) .battery-status ha-icon,
-:host(person-picture-card) .battery-status ha-icon { --mdc-icon-size:20px; width:20px; height:20px; }
+            :host(:is(reference-person-picture-card, person-picture-card)) .badge { width:19px; height:19px; border-width:1.5px; }
+            :host(:is(reference-person-picture-card, person-picture-card)) .badge ha-icon { --mdc-icon-size:10px; width:10px; height:10px; }
+            :host(:is(reference-person-picture-card, person-picture-card)) .battery-status { width:25px; height:25px; min-width:25px; }
+            :host(:is(reference-person-picture-card, person-picture-card)) .battery-status ha-icon { --mdc-icon-size:20px; width:20px; height:20px; }
           }
           @container (max-width:150px) {
-            :host(reference-person-picture-card) .card,
-:host(person-picture-card) .card { grid-template-columns:58px minmax(0,1fr); row-gap:8px; }
-            :host(reference-person-picture-card) .battery-status,
-:host(person-picture-card) .battery-status { grid-column:1/-1; justify-self:end; }
+            :host(:is(reference-person-picture-card, person-picture-card)) .card { grid-template-columns:58px minmax(0,1fr); row-gap:8px; }
+            :host(:is(reference-person-picture-card, person-picture-card)) .battery-status { grid-column:1/-1; justify-self:end; }
           }
           @container (max-width:140px) {
-            :host(reference-person-picture-card) .card,
-:host(person-picture-card) .card { grid-template-columns:50px minmax(0,1fr); }
-            :host(reference-person-picture-card) .avatar,
-:host(person-picture-card) .avatar { width:48px; height:48px; }
+            :host(:is(reference-person-picture-card, person-picture-card)) .card { grid-template-columns:50px minmax(0,1fr); }
+            :host(:is(reference-person-picture-card, person-picture-card)) .avatar { width:48px; height:48px; }
             :host(reference-person-picture-card) .portrait,
 :host(reference-person-picture-card) .fallback,
 :host(person-picture-card) .portrait,
@@ -1667,30 +1502,26 @@
         
           @media (max-width:600px) {
             @container (max-width:260px) {
-              :host(reference-person-picture-card) .card,
-:host(person-picture-card) .card {
+              :host(:is(reference-person-picture-card, person-picture-card)) .card {
                 grid-template-columns:50px minmax(0,1fr) !important;
                 grid-template-rows:1fr auto !important;
                 row-gap:6px;
                 padding:10px 12px !important;
               }
 
-              :host(reference-person-picture-card) .avatar,
-:host(person-picture-card) .avatar {
+              :host(:is(reference-person-picture-card, person-picture-card)) .avatar {
                 grid-column:1;
                 grid-row:1;
                 align-self:center;
               }
 
-              :host(reference-person-picture-card) .content,
-:host(person-picture-card) .content {
+              :host(:is(reference-person-picture-card, person-picture-card)) .content {
                 grid-column:2;
                 grid-row:1;
                 min-width:0;
               }
 
-              :host(reference-person-picture-card) .battery-status,
-:host(person-picture-card) .battery-status {
+              :host(:is(reference-person-picture-card, person-picture-card)) .battery-status {
                 grid-column:1 / -1 !important;
                 grid-row:2 !important;
                 justify-self:end;
@@ -1700,16 +1531,14 @@
           }
 
 /* reference-sensor-state-card */
-:host(reference-sensor-state-card) .card,
-:host(sensor-state-card) .card {
+:host(:is(reference-sensor-state-card, sensor-state-card)) .card {
             --accent-rgb:56,169,255;
             --accent2-rgb:56,169,255;
             grid-template-columns:82px minmax(0,1fr) auto;
           }
 
           /* Inactive sensors use the same neutral/dark treatment as an OFF light. */
-          :host(reference-sensor-state-card) .sensor-card:not(.active),
-:host(sensor-state-card) .sensor-card:not(.active) {
+          :host(:is(reference-sensor-state-card, sensor-state-card)) .sensor-card:not(.active) {
             border-color:rgba(128,145,166,.20);
             background:
               linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.008) 30%,transparent 48%),
@@ -1720,15 +1549,12 @@
               inset 0 -1px 0 rgba(0,0,0,.52),
               0 9px 22px rgba(0,0,0,.36) !important;
           }
-          :host(reference-sensor-state-card) .sensor-card:not(.active)::before,
-:host(sensor-state-card) .sensor-card:not(.active)::before { opacity:.10; }
-          :host(reference-sensor-state-card) .sensor-card:not(.active)::after,
-:host(sensor-state-card) .sensor-card:not(.active)::after {
+          :host(:is(reference-sensor-state-card, sensor-state-card)) .sensor-card:not(.active)::before { opacity:.10; }
+          :host(:is(reference-sensor-state-card, sensor-state-card)) .sensor-card:not(.active)::after {
             background:linear-gradient(108deg,rgba(132,149,170,.28),rgba(255,255,255,.10) 55%,rgba(99,123,153,.22));
             filter:none;
           }
-          :host(reference-sensor-state-card) .sensor-card:not(.active) .icon-shell,
-:host(sensor-state-card) .sensor-card:not(.active) .icon-shell {
+          :host(:is(reference-sensor-state-card, sensor-state-card)) .sensor-card:not(.active) .icon-shell {
             color:#7f8995;
             border-color:rgba(var(--accent-rgb),.22);
             background:
@@ -1736,8 +1562,7 @@
               linear-gradient(145deg,#252d35,#19212a 68%,#131a21);
             box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 6px 16px rgba(0,0,0,.30);
           }
-          :host(reference-sensor-state-card) .sensor-card:not(.active) .icon-shell ha-icon,
-:host(sensor-state-card) .sensor-card:not(.active) .icon-shell ha-icon {
+          :host(:is(reference-sensor-state-card, sensor-state-card)) .sensor-card:not(.active) .icon-shell ha-icon {
             filter:drop-shadow(0 1px 2px rgba(0,0,0,.42));
           }
           :host(reference-sensor-state-card) .sensor-card:not(.active) .sensor-label,
@@ -1745,8 +1570,7 @@
 :host(sensor-state-card) .sensor-card:not(.active) .sensor-label,
 :host(sensor-state-card) .sensor-card:not(.active) .unit { color:#87919d; }
 
-          :host(reference-sensor-state-card) .sensor-card.active,
-:host(sensor-state-card) .sensor-card.active {
+          :host(:is(reference-sensor-state-card, sensor-state-card)) .sensor-card.active {
             background:
               linear-gradient(135deg,rgba(255,255,255,.11),rgba(255,255,255,.03) 26%,transparent 43%),
               linear-gradient(90deg,rgba(var(--accent-rgb),.15),rgba(var(--accent-rgb),.085) 52%,rgba(var(--accent-rgb),.030) 80%,rgba(var(--accent-rgb),.010) 95%,transparent 100%),
@@ -1762,10 +1586,8 @@
               0 0 28px rgba(var(--accent-rgb),.11),
               0 12px 28px rgba(0,0,0,.42);
           }
-          :host(reference-sensor-state-card) .sensor-card.active::before,
-:host(sensor-state-card) .sensor-card.active::before { opacity:.58; }
-          :host(reference-sensor-state-card) .sensor-card.active .icon-shell,
-:host(sensor-state-card) .sensor-card.active .icon-shell {
+          :host(:is(reference-sensor-state-card, sensor-state-card)) .sensor-card.active::before { opacity:.58; }
+          :host(:is(reference-sensor-state-card, sensor-state-card)) .sensor-card.active .icon-shell {
             color:rgb(var(--accent-rgb));
             border-color:rgba(var(--accent-rgb),.60);
             background:
@@ -1779,27 +1601,23 @@
               0 0 26px rgba(var(--accent-rgb),.11),
               0 7px 18px rgba(0,0,0,.30);
           }
-          :host(reference-sensor-state-card) .sensor-card.active .icon-shell ha-icon,
-:host(sensor-state-card) .sensor-card.active .icon-shell ha-icon {
+          :host(:is(reference-sensor-state-card, sensor-state-card)) .sensor-card.active .icon-shell ha-icon {
             filter:
               drop-shadow(0 1px 2px rgba(0,0,0,.42))
               drop-shadow(0 0 9px rgba(var(--accent-rgb),.60));
           }
-          :host(reference-sensor-state-card) .sensor-card.activity-unavailable .icon-shell,
-:host(sensor-state-card) .sensor-card.activity-unavailable .icon-shell {
+          :host(:is(reference-sensor-state-card, sensor-state-card)) .sensor-card.activity-unavailable .icon-shell {
             filter:saturate(.55);
             opacity:.65;
           }
 
-          :host(reference-sensor-state-card) .sensor-label,
-:host(sensor-state-card) .sensor-label {
+          :host(:is(reference-sensor-state-card, sensor-state-card)) .sensor-label {
             color:#9db2cb;
             font-size:15px;
             line-height:1.1;
             font-weight:520;
           }
-          :host(reference-sensor-state-card) .reading,
-:host(sensor-state-card) .reading {
+          :host(:is(reference-sensor-state-card, sensor-state-card)) .reading {
             margin-top:7px;
             display:flex;
             flex-wrap:nowrap;
@@ -1807,8 +1625,7 @@
             gap:7px;
             min-width:0;
           }
-          :host(reference-sensor-state-card) .value,
-:host(sensor-state-card) .value {
+          :host(:is(reference-sensor-state-card, sensor-state-card)) .value {
             color:#f7f9fc;
             font-size:43px;
             line-height:.95;
@@ -1817,8 +1634,7 @@
             font-variant-numeric:tabular-nums;
             overflow-wrap:normal;
           }
-          :host(reference-sensor-state-card) .unit,
-:host(sensor-state-card) .unit {
+          :host(:is(reference-sensor-state-card, sensor-state-card)) .unit {
             color:#bdc9d9;
             font-size:19px;
             line-height:1;
@@ -1826,8 +1642,7 @@
           }
 
           /* Symbol-only info action, matching the person battery treatment. */
-          :host(reference-sensor-state-card) .info-button,
-:host(sensor-state-card) .info-button {
+          :host(:is(reference-sensor-state-card, sensor-state-card)) .info-button {
             width:32px;
             height:32px;
             min-width:32px;
@@ -1842,11 +1657,9 @@
             transition:opacity .16s ease;
           }
           @media (hover:hover) {
-            :host(reference-sensor-state-card) .info-button:hover,
-:host(sensor-state-card) .info-button:hover { opacity:1; }
+            :host(:is(reference-sensor-state-card, sensor-state-card)) .info-button:hover { opacity:1; }
           }
-          :host(reference-sensor-state-card) .info-button ha-icon,
-:host(sensor-state-card) .info-button ha-icon {
+          :host(:is(reference-sensor-state-card, sensor-state-card)) .info-button ha-icon {
             --mdc-icon-size:25px;
             width:25px;
             height:25px;
@@ -1855,53 +1668,42 @@
             justify-content:center;
             filter:drop-shadow(0 0 4px rgba(var(--accent-rgb),.16));
           }
-          :host(reference-sensor-state-card) .sensor-card.active .info-button,
-:host(sensor-state-card) .sensor-card.active .info-button {
+          :host(:is(reference-sensor-state-card, sensor-state-card)) .sensor-card.active .info-button {
             color:rgb(var(--accent-rgb)) !important;
           }
 
           @container (max-width:430px) {
-            :host(reference-sensor-state-card) .card,
-:host(sensor-state-card) .card {
+            :host(:is(reference-sensor-state-card, sensor-state-card)) .card {
               grid-template-columns:50px minmax(0,1fr) auto;
               height:94px;
               min-height:94px;
               max-height:94px;
             }
-            :host(reference-sensor-state-card) .sensor-label,
-:host(sensor-state-card) .sensor-label { font-size:10.5px; }
-            :host(reference-sensor-state-card) .reading,
-:host(sensor-state-card) .reading { margin-top:3px; gap:4px; }
-            :host(reference-sensor-state-card) .value,
-:host(sensor-state-card) .value { font-size:25px; letter-spacing:-.55px; }
-            :host(reference-sensor-state-card) .unit,
-:host(sensor-state-card) .unit { font-size:12px; }
-            :host(reference-sensor-state-card) .info-button,
-:host(sensor-state-card) .info-button {
+            :host(:is(reference-sensor-state-card, sensor-state-card)) .sensor-label { font-size:10.5px; }
+            :host(:is(reference-sensor-state-card, sensor-state-card)) .reading { margin-top:3px; gap:4px; }
+            :host(:is(reference-sensor-state-card, sensor-state-card)) .value { font-size:25px; letter-spacing:-.55px; }
+            :host(:is(reference-sensor-state-card, sensor-state-card)) .unit { font-size:12px; }
+            :host(:is(reference-sensor-state-card, sensor-state-card)) .info-button {
               width:25px;
               height:25px;
               min-width:25px;
             }
-            :host(reference-sensor-state-card) .info-button ha-icon,
-:host(sensor-state-card) .info-button ha-icon {
+            :host(:is(reference-sensor-state-card, sensor-state-card)) .info-button ha-icon {
               --mdc-icon-size:19px;
               width:19px;
               height:19px;
             }
           }
           @container (max-width:150px) {
-            :host(reference-sensor-state-card) .card,
-:host(sensor-state-card) .card { grid-template-columns:50px minmax(0,1fr); }
-            :host(reference-sensor-state-card) .info-button,
-:host(sensor-state-card) .info-button {
+            :host(:is(reference-sensor-state-card, sensor-state-card)) .card { grid-template-columns:50px minmax(0,1fr); }
+            :host(:is(reference-sensor-state-card, sensor-state-card)) .info-button {
               grid-column:1/-1;
               justify-self:end;
             }
           }
         
           @media (max-width:600px) {
-            :host(reference-sensor-state-card) .sensor-label,
-:host(sensor-state-card) .sensor-label {
+            :host(:is(reference-sensor-state-card, sensor-state-card)) .sensor-label {
               white-space:nowrap;
               overflow:hidden;
               overflow-wrap:normal;
@@ -1912,29 +1714,25 @@
             }
 
             @container (max-width:260px) {
-              :host(reference-sensor-state-card) .card,
-:host(sensor-state-card) .card {
+              :host(:is(reference-sensor-state-card, sensor-state-card)) .card {
                 grid-template-columns:50px minmax(0,1fr) !important;
                 grid-template-rows:1fr auto !important;
                 row-gap:5px;
                 padding:10px 12px !important;
               }
 
-              :host(reference-sensor-state-card) .icon-shell,
-:host(sensor-state-card) .icon-shell {
+              :host(:is(reference-sensor-state-card, sensor-state-card)) .icon-shell {
                 grid-column:1;
                 grid-row:1;
               }
 
-              :host(reference-sensor-state-card) .content,
-:host(sensor-state-card) .content {
+              :host(:is(reference-sensor-state-card, sensor-state-card)) .content {
                 grid-column:2;
                 grid-row:1;
                 min-width:0;
               }
 
-              :host(reference-sensor-state-card) .info-button,
-:host(sensor-state-card) .info-button {
+              :host(:is(reference-sensor-state-card, sensor-state-card)) .info-button {
                 grid-column:1 / -1 !important;
                 grid-row:2 !important;
                 justify-self:end;
@@ -1944,8 +1742,7 @@
           }
 
 /* reference-thermostat-card */
-:host(reference-thermostat-card) .thermostat-card,
-:host(thermostat-card) .thermostat-card {
+:host(:is(reference-thermostat-card, thermostat-card)) .thermostat-card {
             height:auto;
             max-height:none;
             --accent-rgb:108,163,220;
@@ -2001,15 +1798,13 @@
               0 6px 16px rgba(0,0,0,.30);
           }
 
-          :host(reference-thermostat-card) .thermostat-main,
-:host(thermostat-card) .thermostat-main {
+          :host(:is(reference-thermostat-card, thermostat-card)) .thermostat-main {
             min-width:0;
             align-self:center;
           }
 
           /* Only the current temperature is kept as the card subtext. */
-          :host(reference-thermostat-card) .current,
-:host(thermostat-card) .current {
+          :host(:is(reference-thermostat-card, thermostat-card)) .current {
             margin-top:6px;
             color:#aeb9c7;
             font-size:14px;
@@ -2017,8 +1812,7 @@
             font-variant-numeric:tabular-nums;
           }
 
-          :host(reference-thermostat-card) .thermostat-controls,
-:host(thermostat-card) .thermostat-controls {
+          :host(:is(reference-thermostat-card, thermostat-card)) .thermostat-controls {
             position:relative;
             z-index:7;
             grid-column:1/-1;
@@ -2031,8 +1825,7 @@
             gap:14px;
           }
 
-          :host(reference-thermostat-card) .target-display,
-:host(thermostat-card) .target-display {
+          :host(:is(reference-thermostat-card, thermostat-card)) .target-display {
             min-width:0;
             display:flex;
             align-items:baseline;
@@ -2053,8 +1846,7 @@
               0 4px 12px rgba(0,0,0,.23);
           }
 
-          :host(reference-thermostat-card) .target,
-:host(thermostat-card) .target {
+          :host(:is(reference-thermostat-card, thermostat-card)) .target {
             color:#f8fafc;
             font-size:29px;
             line-height:1;
@@ -2063,15 +1855,13 @@
             font-variant-numeric:tabular-nums;
           }
 
-          :host(reference-thermostat-card) .target-unit,
-:host(thermostat-card) .target-unit {
+          :host(:is(reference-thermostat-card, thermostat-card)) .target-unit {
             color:#b7c4d3;
             font-size:15px;
             font-weight:500;
           }
 
-          :host(reference-thermostat-card) .temp-button,
-:host(thermostat-card) .temp-button {
+          :host(:is(reference-thermostat-card, thermostat-card)) .temp-button {
             width:44px;
             height:44px;
             display:grid;
@@ -2094,8 +1884,7 @@
             user-select:none;
           }
 
-          :host(reference-thermostat-card) .temp-button ha-icon,
-:host(thermostat-card) .temp-button ha-icon {
+          :host(:is(reference-thermostat-card, thermostat-card)) .temp-button ha-icon {
             --mdc-icon-size:22px;
             width:22px;
             height:22px;
@@ -2108,12 +1897,10 @@
            * Deliberately no :active scale/brightness/card animation.
            * Temperature changes are shown only in the target number.
            */
-          :host(reference-thermostat-card) .temp-button:disabled,
-:host(thermostat-card) .temp-button:disabled { opacity:.34; }
+          :host(:is(reference-thermostat-card, thermostat-card)) .temp-button:disabled { opacity:.34; }
 
           @container (max-width:430px) {
-            :host(reference-thermostat-card) .thermostat-card,
-:host(thermostat-card) .thermostat-card {
+            :host(:is(reference-thermostat-card, thermostat-card)) .thermostat-card {
               height:auto;
               min-height:118px;
               max-height:none;
@@ -2123,42 +1910,35 @@
               padding-block:10px;
             }
 
-            :host(reference-thermostat-card) .current,
-:host(thermostat-card) .current {
+            :host(:is(reference-thermostat-card, thermostat-card)) .current {
               margin-top:3px;
               font-size:10.5px;
             }
 
-            :host(reference-thermostat-card) .thermostat-controls,
-:host(thermostat-card) .thermostat-controls {
+            :host(:is(reference-thermostat-card, thermostat-card)) .thermostat-controls {
               width:min(100%,230px);
               grid-template-columns:30px minmax(72px,1fr) 30px;
               gap:7px;
             }
 
-            :host(reference-thermostat-card) .target-display,
-:host(thermostat-card) .target-display {
+            :host(:is(reference-thermostat-card, thermostat-card)) .target-display {
               padding:5px 8px;
               border-radius:8px;
             }
 
-            :host(reference-thermostat-card) .target,
-:host(thermostat-card) .target {
+            :host(:is(reference-thermostat-card, thermostat-card)) .target {
               font-size:18px;
               letter-spacing:-.35px;
             }
 
-            :host(reference-thermostat-card) .target-unit,
-:host(thermostat-card) .target-unit { font-size:10px; }
+            :host(:is(reference-thermostat-card, thermostat-card)) .target-unit { font-size:10px; }
 
-            :host(reference-thermostat-card) .temp-button,
-:host(thermostat-card) .temp-button {
+            :host(:is(reference-thermostat-card, thermostat-card)) .temp-button {
               width:30px;
               height:30px;
             }
 
-            :host(reference-thermostat-card) .temp-button ha-icon,
-:host(thermostat-card) .temp-button ha-icon {
+            :host(:is(reference-thermostat-card, thermostat-card)) .temp-button ha-icon {
               --mdc-icon-size:16px;
               width:16px;
               height:16px;
@@ -2166,19 +1946,16 @@
           }
 
           @container (max-width:210px) {
-            :host(reference-thermostat-card) .thermostat-controls,
-:host(thermostat-card) .thermostat-controls {
+            :host(:is(reference-thermostat-card, thermostat-card)) .thermostat-controls {
               width:100%;
               grid-template-columns:28px minmax(58px,1fr) 28px;
               gap:5px;
             }
-            :host(reference-thermostat-card) .target,
-:host(thermostat-card) .target { font-size:16px; }
+            :host(:is(reference-thermostat-card, thermostat-card)) .target { font-size:16px; }
           }
 
 /* reference-navigation-card */
-:host(reference-navigation-card) .navigation-card,
-:host(navigation-card) .navigation-card {
+:host(:is(reference-navigation-card, navigation-card)) .navigation-card {
             --accent-rgb:116,137,255;
             --accent2-rgb:116,137,255;
             min-height:150px;
@@ -2188,16 +1965,13 @@
               radial-gradient(88% 120% at 110% -8%,rgba(var(--accent-rgb),.07),transparent 56%),
               linear-gradient(133deg,#22293a 0%,#192131 49%,#111823 100%);
           }
-          :host(reference-navigation-card) .navigation-card .icon-shell,
-:host(navigation-card) .navigation-card .icon-shell {
+          :host(:is(reference-navigation-card, navigation-card)) .navigation-card .icon-shell {
             color:rgb(var(--accent-rgb));
             border-color:rgba(var(--accent-rgb),.44);
             box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 0 13px rgba(var(--accent-rgb),.18),0 7px 18px rgba(0,0,0,.30);
           }
-          :host(reference-navigation-card) .navigation-card .subtext,
-:host(navigation-card) .navigation-card .subtext { margin-top:7px; color:#a9b1bf; font-size:15px; }
-          :host(reference-navigation-card) .nav-action,
-:host(navigation-card) .nav-action {
+          :host(:is(reference-navigation-card, navigation-card)) .navigation-card .subtext { margin-top:7px; color:#a9b1bf; font-size:15px; }
+          :host(:is(reference-navigation-card, navigation-card)) .nav-action {
             position:relative;
             z-index:4;
             width:42px;
@@ -2211,32 +1985,22 @@
             box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 0 12px rgba(var(--accent-rgb),.11),0 4px 10px rgba(0,0,0,.25);
             transition:transform .18s ease,box-shadow .18s ease;
           }
-          :host(reference-navigation-card) .nav-action ha-icon,
-:host(navigation-card) .nav-action ha-icon { --mdc-icon-size:23px; width:23px; height:23px; }
-          :host(reference-navigation-card) .navigation-card:active .nav-action,
-:host(navigation-card) .navigation-card:active .nav-action { transform:translateX(3px); }
-          @media (hover:hover) { :host(reference-navigation-card) .navigation-card:hover .nav-action,
-:host(navigation-card) .navigation-card:hover .nav-action { transform:translateX(3px); box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 0 16px rgba(var(--accent-rgb),.20),0 4px 10px rgba(0,0,0,.25); } }
+          :host(:is(reference-navigation-card, navigation-card)) .nav-action ha-icon { --mdc-icon-size:23px; width:23px; height:23px; }
+          :host(:is(reference-navigation-card, navigation-card)) .navigation-card:active .nav-action { transform:translateX(3px); }
+          @media (hover:hover) { :host(:is(reference-navigation-card, navigation-card)) .navigation-card:hover .nav-action { transform:translateX(3px); box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 0 16px rgba(var(--accent-rgb),.20),0 4px 10px rgba(0,0,0,.25); } }
           @container (max-width:430px) {
-            :host(reference-navigation-card) .navigation-card,
-:host(navigation-card) .navigation-card { height:94px; min-height:94px; max-height:94px; grid-template-columns:50px minmax(0,1fr) auto; }
-            :host(reference-navigation-card) .navigation-card .subtext,
-:host(navigation-card) .navigation-card .subtext { margin-top:3px; font-size:10.5px; }
-            :host(reference-navigation-card) .nav-action,
-:host(navigation-card) .nav-action { width:28px; height:28px; }
-            :host(reference-navigation-card) .nav-action ha-icon,
-:host(navigation-card) .nav-action ha-icon { --mdc-icon-size:17px; width:17px; height:17px; }
+            :host(:is(reference-navigation-card, navigation-card)) .navigation-card { height:94px; min-height:94px; max-height:94px; grid-template-columns:50px minmax(0,1fr) auto; }
+            :host(:is(reference-navigation-card, navigation-card)) .navigation-card .subtext { margin-top:3px; font-size:10.5px; }
+            :host(:is(reference-navigation-card, navigation-card)) .nav-action { width:28px; height:28px; }
+            :host(:is(reference-navigation-card, navigation-card)) .nav-action ha-icon { --mdc-icon-size:17px; width:17px; height:17px; }
           }
           @container (max-width:150px) {
-            :host(reference-navigation-card) .navigation-card,
-:host(navigation-card) .navigation-card { grid-template-columns:50px minmax(0,1fr); }
-            :host(reference-navigation-card) .nav-action,
-:host(navigation-card) .nav-action { grid-column:1/-1; justify-self:end; }
+            :host(:is(reference-navigation-card, navigation-card)) .navigation-card { grid-template-columns:50px minmax(0,1fr); }
+            :host(:is(reference-navigation-card, navigation-card)) .nav-action { grid-column:1/-1; justify-self:end; }
           }
         
           @media (max-width:600px) {
-            :host(reference-navigation-card) .navigation-card .subtext,
-:host(navigation-card) .navigation-card .subtext {
+            :host(:is(reference-navigation-card, navigation-card)) .navigation-card .subtext {
               white-space:nowrap !important;
               overflow:hidden !important;
               text-overflow:ellipsis !important;
@@ -2248,23 +2012,20 @@
             }
 
             @container (max-width:260px) {
-              :host(reference-navigation-card) .navigation-card,
-:host(navigation-card) .navigation-card {
+              :host(:is(reference-navigation-card, navigation-card)) .navigation-card {
                 grid-template-columns:50px minmax(0,1fr) !important;
                 grid-template-rows:1fr auto !important;
                 row-gap:6px;
                 padding:10px 12px !important;
               }
 
-              :host(reference-navigation-card) .navigation-card .content,
-:host(navigation-card) .navigation-card .content {
+              :host(:is(reference-navigation-card, navigation-card)) .navigation-card .content {
                 grid-column:2;
                 grid-row:1;
                 min-width:0;
               }
 
-              :host(reference-navigation-card) .nav-action,
-:host(navigation-card) .nav-action {
+              :host(:is(reference-navigation-card, navigation-card)) .nav-action {
                 grid-column:1 / -1 !important;
                 grid-row:2 !important;
                 justify-self:end;
@@ -2410,8 +2171,7 @@
 
 /* Legacy phone rules must not restore descriptions in the single-row layout. */
 :host .card.grid-1-row .content .subtext { display:none !important; }
-:host(reference-navigation-card) .card.grid-1-row .content .subtext,
-:host(navigation-card) .card.grid-1-row .content .subtext {
+:host(:is(reference-navigation-card, navigation-card)) .card.grid-1-row .content .subtext {
   display:block !important;
   margin-top:2px !important;
   font-size:10px !important;
@@ -2501,8 +2261,7 @@
 
 /* Final responsive layout. These rules intentionally override the older card
    experiments above so resizing does not change a dimmer's structure. */
-:host(reference-brightness-light-card) .card.grid-2-row,
-:host(brightness-light-card) .card.grid-2-row {
+:host(:is(reference-brightness-light-card, brightness-light-card)) .card.grid-2-row {
   height:120px !important;
   min-height:120px !important;
   max-height:120px !important;
@@ -2512,8 +2271,7 @@
   row-gap:0 !important;
   padding:12px 16px 34px !important;
 }
-:host(reference-brightness-light-card) .card.grid-2-row .icon-shell,
-:host(brightness-light-card) .card.grid-2-row .icon-shell {
+:host(:is(reference-brightness-light-card, brightness-light-card)) .card.grid-2-row .icon-shell {
   grid-column:1 !important;
   grid-row:1 !important;
   width:52px !important;
@@ -2521,15 +2279,13 @@
   align-self:center !important;
   justify-self:center !important;
 }
-:host(reference-brightness-light-card) .card.grid-2-row .content,
-:host(brightness-light-card) .card.grid-2-row .content {
+:host(:is(reference-brightness-light-card, brightness-light-card)) .card.grid-2-row .content {
   grid-column:2 !important;
   grid-row:1 !important;
   align-self:center !important;
   padding:0 !important;
 }
-:host(reference-brightness-light-card) .card.grid-2-row .slider-row,
-:host(brightness-light-card) .card.grid-2-row .slider-row {
+:host(:is(reference-brightness-light-card, brightness-light-card)) .card.grid-2-row .slider-row {
   left:16px !important;
   right:16px !important;
   bottom:9px !important;
@@ -2546,51 +2302,43 @@
     padding-left:10px !important;
     padding-right:10px !important;
   }
-  :host(reference-brightness-light-card) .card.grid-2-row,
-  :host(brightness-light-card) .card.grid-2-row {
+  :host(:is(reference-brightness-light-card, brightness-light-card)) .card.grid-2-row {
     padding:10px 10px 31px !important;
   }
-  :host(reference-brightness-light-card) .card.grid-2-row .slider-row,
-  :host(brightness-light-card) .card.grid-2-row .slider-row {
+  :host(:is(reference-brightness-light-card, brightness-light-card)) .card.grid-2-row .slider-row {
     left:10px !important;
     right:10px !important;
   }
-  :host(reference-person-picture-card) .badge,
-  :host(person-picture-card) .badge {
+  :host(:is(reference-person-picture-card, person-picture-card)) .badge {
     top:-3px !important;
     right:-5px !important;
   }
 }
 
 /* The location badge uses the same outward edge offsets as state subicons. */
-:host(reference-person-picture-card) .grid-1-row .badge,
-:host(person-picture-card) .grid-1-row .badge {
+:host(:is(reference-person-picture-card, person-picture-card)) .grid-1-row .badge {
   top:var(--subicon-edge-y) !important;
   right:var(--subicon-edge-x) !important;
 }
 
 /* Sensor cards reverse the usual text emphasis: the reading is the primary
    line and the entity name uses the normal supporting-text treatment. */
-:host(reference-sensor-state-card) .grid-1-row .sensor-label,
-:host(sensor-state-card) .grid-1-row .sensor-label {
+:host(:is(reference-sensor-state-card, sensor-state-card)) .grid-1-row .sensor-label {
   color:#87919d !important;
   font-size:12px !important;
   font-weight:430 !important;
   line-height:1.1 !important;
 }
-:host(reference-sensor-state-card) .grid-1-row .reading,
-:host(sensor-state-card) .grid-1-row .reading {
+:host(:is(reference-sensor-state-card, sensor-state-card)) .grid-1-row .reading {
   margin-top:2px !important;
   line-height:1.05 !important;
 }
-:host(reference-sensor-state-card) .grid-1-row .reading .value,
-:host(sensor-state-card) .grid-1-row .reading .value {
+:host(:is(reference-sensor-state-card, sensor-state-card)) .grid-1-row .reading .value {
   font-size:14px !important;
   font-weight:760 !important;
   letter-spacing:-.1px !important;
 }
-:host(reference-sensor-state-card) .grid-1-row .reading .unit,
-:host(sensor-state-card) .grid-1-row .reading .unit {
+:host(:is(reference-sensor-state-card, sensor-state-card)) .grid-1-row .reading .unit {
   font-size:11px !important;
   font-weight:520 !important;
 }
@@ -2606,57 +2354,46 @@
   margin-top:0 !important;
   margin-bottom:0 !important;
 }
-:host(reference-navigation-card) .card.navigation-card .content > .subtext,
-:host(navigation-card) .card.navigation-card .content > .subtext {
+:host(:is(reference-navigation-card, navigation-card)) .card.navigation-card .content > .subtext {
   margin-top:0 !important;
 }
 
 /* Keep the thermostat controls stable and scale only their text. */
 @container (max-width:260px) {
-  :host(reference-thermostat-card) .grid-2-row .target,
-  :host(thermostat-card) .grid-2-row .target { font-size:16px !important; }
-  :host(reference-thermostat-card) .grid-2-row .target-unit,
-  :host(thermostat-card) .grid-2-row .target-unit { font-size:10px !important; }
+  :host(:is(reference-thermostat-card, thermostat-card)) .grid-2-row .target { font-size:16px !important; }
+  :host(:is(reference-thermostat-card, thermostat-card)) .grid-2-row .target-unit { font-size:10px !important; }
 }
 
 @container (max-width:200px) {
-  :host(reference-thermostat-card) .grid-2-row .target,
-  :host(thermostat-card) .grid-2-row .target { font-size:14px !important; }
-  :host(reference-thermostat-card) .grid-2-row .target-unit,
-  :host(thermostat-card) .grid-2-row .target-unit { font-size:9px !important; }
+  :host(:is(reference-thermostat-card, thermostat-card)) .grid-2-row .target { font-size:14px !important; }
+  :host(:is(reference-thermostat-card, thermostat-card)) .grid-2-row .target-unit { font-size:9px !important; }
 }
 
 /* Keep the wide light switch close to the 28px action-icon scale. */
-:host(reference-basic-light-card) .grid-1-row .switch,
-:host(basic-light-card) .grid-1-row .switch {
+:host(:is(reference-basic-light-card, basic-light-card)) .grid-1-row .switch {
   --w:32px !important;
   --h:20px !important;
   --knob:14px !important;
   padding:2px !important;
 }
-:host(reference-basic-light-card) .grid-1-row.active .knob,
-:host(basic-light-card) .grid-1-row.active .knob {
+:host(:is(reference-basic-light-card, basic-light-card)) .grid-1-row.active .knob {
   transform:translateX(12px) !important;
 }
 
 /* Give the dimmer two explicit rows and center them as one unit. This keeps
    the visible icon and slider equally far from the card edges. */
-:host(reference-brightness-light-card) .card.grid-2-row,
-:host(brightness-light-card) .card.grid-2-row {
+:host(:is(reference-brightness-light-card, brightness-light-card)) .card.grid-2-row {
   grid-template-rows:52px 18px !important;
   row-gap:12px !important;
   align-content:center !important;
   padding-top:12px !important;
   padding-bottom:12px !important;
 }
-:host(reference-brightness-light-card) .card.grid-2-row .icon-shell,
-:host(brightness-light-card) .card.grid-2-row .icon-shell,
-:host(reference-brightness-light-card) .card.grid-2-row .content,
-:host(brightness-light-card) .card.grid-2-row .content {
+:host(:is(reference-brightness-light-card, brightness-light-card)) .card.grid-2-row .icon-shell,
+:host(:is(reference-brightness-light-card, brightness-light-card)) .card.grid-2-row .content {
   grid-row:1 !important;
 }
-:host(reference-brightness-light-card) .card.grid-2-row .slider-row,
-:host(brightness-light-card) .card.grid-2-row .slider-row {
+:host(:is(reference-brightness-light-card, brightness-light-card)) .card.grid-2-row .slider-row {
   position:relative !important;
   inset:auto !important;
   grid-column:1 / -1 !important;
@@ -2667,8 +2404,7 @@
 }
 
 @media (max-width:600px) {
-  :host(reference-brightness-light-card) .card.grid-2-row,
-  :host(brightness-light-card) .card.grid-2-row {
+  :host(:is(reference-brightness-light-card, brightness-light-card)) .card.grid-2-row {
     padding-top:12px !important;
     padding-bottom:12px !important;
   }
@@ -2684,8 +2420,7 @@
     padding-left:6px !important;
     padding-right:6px !important;
   }
-  :host(reference-brightness-light-card) .card.grid-2-row,
-  :host(brightness-light-card) .card.grid-2-row {
+  :host(:is(reference-brightness-light-card, brightness-light-card)) .card.grid-2-row {
     padding-left:6px !important;
     padding-right:6px !important;
   }

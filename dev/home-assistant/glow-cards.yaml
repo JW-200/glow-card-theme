@@ -29,7 +29,6 @@ views:
             entity: person.glow_demo
             name: Demo resident
             battery_entity: input_number.glow_battery
-            charging_entity: input_boolean.glow_battery_charging
           - type: custom:sensor-state-card
             entity: sensor.outside_temperature
             active_template: "{{ is_state('input_boolean.glow_sensor_active', 'on') }}"
@@ -44,7 +43,6 @@ views:
             entities:
               - input_boolean.glow_sensor_active
               - input_number.glow_battery
-              - input_boolean.glow_battery_charging
       - type: grid
         cards:
           - type: heading

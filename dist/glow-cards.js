@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '16.0.20';
+  const VERSION = '16.1.0';
   const stylesheetUrl = new URL(`./glow-card.css?v=${VERSION}`, import.meta.url);
   const devRevision = new URL(import.meta.url).searchParams.get('dev');
   if (devRevision) stylesheetUrl.searchParams.set('dev', devRevision);
@@ -48,9 +48,7 @@
     }
     return rgbTriplet(fallback, [255,190,57]);
   };
-  const stateColor = (config, stateKey, field, fallback) => {
-    return rgbTriplet(config?.[field], fallback);
-  };
+  const configuredColor = (config, field, fallback) => rgbTriplet(config?.[field], fallback);
   // HA publishes normalized rgb_color for its supported color modes.
   const lightColor = (state) => state?.attributes?.rgb_color ?? [255,190,57];
   const setAccent = (card, rgb, rgb2 = rgb) => {
@@ -94,7 +92,6 @@
     away: 'mdi:exit-run',
     unknown: 'mdi:help-circle-outline',
     sensor: 'mdi:gauge',
-    chevron: 'mdi:chevron-right',
     info: 'mdi:information-outline',
     battery: 'mdi:battery',
     batteryUnknown: 'mdi:battery-unknown',
@@ -105,12 +102,6 @@
     plus: 'mdi:plus',
     navigate: 'mdi:arrow-right',
   };
-
-  /*
-   * The compact breakpoints keep the normal one-row layout as long as possible.
-   * Wrapping/reflow only starts once the card is genuinely too narrow to fit controls.  This is where the previous version drifted furthest from
-   * the reference: it was too tall, too round and inherited green accents.
-   */
 
   class ReferenceCardBase extends HTMLElement {
     constructor() {
@@ -192,9 +183,6 @@
         }).catch((error) => apply({ error:error.message || String(error) }));
       }
     }
-
-    getCardSize() { return 2; }
-    getGridOptions() { return { columns:6, min_columns:4 }; }
 
     entity(entityId = this.config?.entity) {
       return entityId ? this._hass?.states?.[entityId] : null;
@@ -296,11 +284,7 @@
         });
       });
 
-      card.addEventListener('pointerleave', () => {
-        clearTimeout(this._holdTimer);
-        if (!card.matches(':active')) {
-        }
-      });
+      card.addEventListener('pointerleave', () => clearTimeout(this._holdTimer));
 
       card.addEventListener('click', (event) => {
         if (event.target.closest('[data-control]')) return;
@@ -318,8 +302,6 @@
     }
 
     disconnectedCallback() { clearTimeout(this._holdTimer); this.stopColorTemplates(); }
-    render() {}
-    update() {}
   }
 
   class ReferenceBasicLightCard extends ReferenceCardBase {
@@ -338,7 +320,6 @@
           <div class="content">
             <div class="name"></div>
             <div class="state"></div>
-            <div class="subtext"></div>
           </div>
           <button class="control" type="button" data-control aria-label="Toggle">
             <span class="switch" aria-hidden="true"><span class="knob"></span></span>
@@ -357,7 +338,7 @@
       if (!state || !card) return;
       const isOn = active(state);
       const isAvailable = available(state);
-      setAccent(card, stateColor(this.config, isOn ? 'on' : 'off', isOn ? 'active_color' : 'inactive_color', isOn ? lightColor(state) : [132,149,170]));
+      setAccent(card, configuredColor(this.config, isOn ? 'active_color' : 'inactive_color', isOn ? lightColor(state) : [132,149,170]));
       card.classList.toggle('active', isOn);
       card.classList.toggle('unavailable', !isAvailable);
       card.setAttribute('aria-pressed', String(isOn));
@@ -366,9 +347,6 @@
 
       this.shadowRoot.querySelector('.name').textContent = this.name(state,'Light');
       this.shadowRoot.querySelector('.state').textContent = isAvailable ? (isOn ? 'On' : 'Off') : 'Unavailable';
-      const sub = this.shadowRoot.querySelector('.subtext');
-      sub.textContent = '';
-      sub.hidden = !sub.textContent;
       this.shadowRoot.querySelector('.main-icon').icon = this.stateIcon(state, ICONS.light);
       const control = this.shadowRoot.querySelector('button.control');
       control.disabled = !isAvailable;
@@ -407,7 +385,6 @@
           <div class="content">
             <div class="name"></div>
             <div class="state"></div>
-            <div class="subtext"></div>
           </div>
 
           <div class="slider-row" data-control>
@@ -627,9 +604,8 @@
 
       setAccent(
         card,
-        stateColor(
+        configuredColor(
           this.config,
-          isOn ? 'on' : 'off',
           isOn ? 'active_color' : 'inactive_color',
           isOn ? lightColor(this.entity(this.brightnessEntityId()) || state) : [132,149,170]
         )
@@ -655,10 +631,6 @@
         isAvailable
           ? (isOn ? 'On' : 'Off')
           : 'Unavailable';
-
-      const sub = this.shadowRoot.querySelector('.subtext');
-      sub.textContent = '';
-      sub.hidden = !sub.textContent;
 
       this.shadowRoot.querySelector('.main-icon').icon =
         this.stateIcon(state, ICONS.light);
@@ -736,23 +708,6 @@
         (presence === 'home' ? ICONS.home : presence === 'zone' ? ICONS.zone : presence === 'away' ? ICONS.away : ICONS.unknown);
     }
 
-    isCharging(batteryState) {
-      const chargingState = this.config.charging_entity ? this.entity(this.config.charging_entity) : null;
-      const attributes = [chargingState?.attributes, batteryState?.attributes];
-      const values = [
-        chargingState?.state,
-        ...attributes.flatMap((item) => item ? [item.charging, item.is_charging, item.battery_charging, item.status, item.battery_status] : []),
-      ];
-      return values.some((value) => value === true || ['on','true','yes','charging'].includes(String(value ?? '').trim().toLowerCase()));
-    }
-
-    batteryIcon(value, availableState, charging = false) {
-      if (!availableState || !Number.isFinite(value)) return ICONS.batteryUnknown;
-      const level = clamp(Math.round(value / 10) * 10, 10, 100);
-      if (charging) return `mdi:battery-charging-${level}`;
-      return level >= 100 ? 'mdi:battery' : `mdi:battery-${level}`;
-    }
-
     update() {
       const state = this.entity();
       const card = this.shadowRoot.querySelector('.card');
@@ -763,10 +718,10 @@
       const fallbackName = this.entityLabel(this.config.entity, 'Person');
       const displayName = this.name(state, fallbackName);
       const presenceColors = {
-        home: stateColor(this.config, 'home', 'home_color', [70,223,107]),
-        zone: stateColor(this.config, raw, 'zone_color', [75,169,255]),
-        away: stateColor(this.config, 'away', 'away_color', [255,73,57]),
-        unknown: stateColor(this.config, 'unknown', 'unknown_color', [135,145,158]),
+        home: configuredColor(this.config, 'home_color', [70,223,107]),
+        zone: configuredColor(this.config, 'zone_color', [75,169,255]),
+        away: configuredColor(this.config, 'away_color', [255,73,57]),
+        unknown: configuredColor(this.config, 'unknown_color', [135,145,158]),
       };
       setAccent(card, presenceColors[presence], presenceColors[presence]);
 
@@ -790,17 +745,14 @@
       battery.hidden = !batteryId;
       if (batteryId) {
         const batteryAvailable = available(batteryState);
-        const numeric = Number(batteryState?.state);
-        const hasNumber = batteryAvailable && Number.isFinite(numeric);
-        const unit = String(batteryState?.attributes?.unit_of_measurement || (hasNumber ? '%' : '')).trim();
-        const charging = this.isCharging(batteryState);
+        const unit = String(batteryState?.attributes?.unit_of_measurement || '').trim();
+        const batteryIcon = batteryState?.attributes?.icon ||
+          (batteryAvailable ? ICONS.battery : ICONS.batteryUnknown);
         this.shadowRoot.querySelectorAll('.battery-icon').forEach((icon) => {
-          icon.icon = this.batteryIcon(numeric, batteryAvailable, charging);
+          icon.icon = batteryIcon;
         });
-        const chargingText = charging ? ' · Charging' : '';
-        battery.classList.toggle('charging', charging);
-        battery.setAttribute('title', batteryAvailable ? `Battery ${String(batteryState.state)}${unit ? ` ${unit}` : ''}${chargingText}` : 'Battery unavailable');
-        battery.setAttribute('aria-label', `Battery: ${batteryAvailable ? String(batteryState.state) + (unit ? ` ${unit}` : '') + (charging ? ', charging' : '') : 'Unavailable'}. More details`);
+        battery.setAttribute('title', batteryAvailable ? `Battery ${String(batteryState.state)}${unit ? ` ${unit}` : ''}` : 'Battery unavailable');
+        battery.setAttribute('aria-label', `Battery: ${batteryAvailable ? String(batteryState.state) + (unit ? ` ${unit}` : '') : 'Unavailable'}. More details`);
       }
     }
 
@@ -854,9 +806,9 @@
       const value = isAvailable
         ? (String(state.state).trim() !== '' && Number.isFinite(numeric)
           ? new Intl.NumberFormat(this._hass?.locale?.language || 'en', {
-              maximumFractionDigits:3,
+              maximumFractionDigits:2,
             }).format(numeric)
-          : String(state.state))
+          : (this._hass?.formatEntityState?.(state) || String(state.state)))
         : 'Unavailable';
 
       const usesActiveTemplate =
@@ -865,12 +817,9 @@
       const isActive = usesActiveTemplate
         ? templateBoolean(this._activeTemplateResult)
         : active(state);
-      const activitySource = state;
-
-      const activityKey = String(activitySource?.state ?? (isActive ? 'active' : 'inactive'));
       const sensorAccent = isActive
-        ? stateColor(this.config, activityKey, 'active_color', [56,169,255])
-        : stateColor(this.config, 'inactive', 'inactive_color', [132,149,170]);
+        ? configuredColor(this.config, 'active_color', [56,169,255])
+        : configuredColor(this.config, 'inactive_color', [132,149,170]);
 
       setAccent(card, sensorAccent, sensorAccent);
       card.classList.toggle('active', isActive);
@@ -885,14 +834,7 @@
       this.shadowRoot.querySelector('.value').textContent = value;
       this.shadowRoot.querySelector('.unit').textContent = isAvailable ? unit : '';
 
-      const stateKey = String(activitySource?.state ?? '');
-      const stateMap =
-        this.config.icon_states && typeof this.config.icon_states === 'object'
-          ? this.config.icon_states
-          : null;
-
       const sensorIcon =
-        stateMap?.[stateKey] ||
         (isActive
           ? (this.config.icon_active || this.config.icon_on)
           : (this.config.icon_inactive || this.config.icon_off)) ||
@@ -1299,9 +1241,8 @@
               ? [120,132,147]
               : [108,163,220];
 
-      const accent = stateColor(
+      const accent = configuredColor(
         this.config,
-        visual,
         colorField,
         fallbackColor
       );
@@ -1416,7 +1357,7 @@
     update() {
       const card = this.shadowRoot.querySelector('.card');
       if (!card) return;
-      const accent = stateColor(this.config, 'active', 'color', [116,137,255]);
+      const accent = configuredColor(this.config, 'color', [116,137,255]);
       setAccent(card, accent, accent);
       this.shadowRoot.querySelector('.main-icon').icon = this.config.icon || ICONS.navigate;
       const name = this.config.name || 'Navigate';
@@ -1450,7 +1391,7 @@
       ];
       if (this.kind === 'basic') return [...common, { name:'icon_on', selector:{ icon:{} } }, { name:'icon_off', selector:{ icon:{} } }, { name:'active_color', selector:{ color_rgb:{} } }];
       if (this.kind === 'brightness') return [...common, { name:'icon_on', selector:{ icon:{} } }, { name:'icon_off', selector:{ icon:{} } }, { name:'active_color', selector:{ color_rgb:{} } }];
-      if (this.kind === 'person') return [...common, { name:'battery_entity', selector:{ entity:{} } }, { name:'charging_entity', selector:{ entity:{} } }, { name:'home_color', selector:{ color_rgb:{} } }, { name:'zone_color', selector:{ color_rgb:{} } }, { name:'away_color', selector:{ color_rgb:{} } }, { name:'unknown_color', selector:{ color_rgb:{} } }];
+      if (this.kind === 'person') return [...common, { name:'battery_entity', selector:{ entity:{} } }, { name:'home_color', selector:{ color_rgb:{} } }, { name:'zone_color', selector:{ color_rgb:{} } }, { name:'away_color', selector:{ color_rgb:{} } }, { name:'unknown_color', selector:{ color_rgb:{} } }];
       if (this.kind === 'sensor') return [...common, { name:'unit', selector:{ text:{} } }, { name:'active_template', selector:{ template:{} } }, { name:'icon_active', selector:{ icon:{} } }, { name:'icon_inactive', selector:{ icon:{} } }, { name:'subicon', selector:{ icon:{} } }, { name:'active_color', selector:{ color_rgb:{} } }];
       if (this.kind === 'thermostat') return [
         { name:'entity', required:true, selector:{ entity:{ domain:'climate' } } },
@@ -1482,7 +1423,7 @@
         this.shadowRoot.querySelector('ha-form').addEventListener('value-changed', (event) => {
           event.stopPropagation();
           const next = { ...this._config, ...event.detail.value };
-          for (const key of ['name','friendly_name','subtitle','subtext','icon','icon_on','icon_off','icon_active','icon_inactive','subicon','icon_heating','icon_cooling','icon_idle','unit','brightness_entity','battery_entity','charging_entity','active_entity','active_state','active_template','temperature_step','navigation_path','color','active_color','inactive_color','home_color','zone_color','away_color','unknown_color','heating_color','cooling_color','idle_color','off_color']) {
+          for (const key of ['name','friendly_name','subtitle','subtext','icon','icon_on','icon_off','icon_active','icon_inactive','subicon','icon_heating','icon_cooling','icon_idle','unit','battery_entity','active_template','temperature_step','navigation_path','color','active_color','inactive_color','home_color','zone_color','away_color','unknown_color','heating_color','cooling_color','idle_color','off_color']) {
             if (next[key] === '' || next[key] == null) delete next[key];
           }
           this._config = next;
@@ -1513,7 +1454,6 @@
         icon_inactive:'Inactive-state icon override',
         subicon:'Subicon',
         battery_entity:'Battery entity',
-        charging_entity:'Charging entity (optional)',
         temperature_step:'Temperature adjustment step',
         icon_heating:'Heating icon override',
         icon_cooling:'Cooling icon override',
@@ -1539,53 +1479,30 @@
     return editor;
   };
 
-  ReferenceBasicLightCard.getConfigElement = () => editorFor('basic');
-  ReferenceBrightnessLightCard.getConfigElement = () => editorFor('brightness');
-  ReferencePersonCard.getConfigElement = () => editorFor('person');
-  ReferenceSensorCard.getConfigElement = () => editorFor('sensor');
-  ReferenceThermostatCard.getConfigElement = () => editorFor('thermostat');
-  ReferenceNavigationCard.getConfigElement = () => editorFor('navigation');
-
   const define = (name, klass) => {
     if (!customElements.get(name)) customElements.define(name, klass);
   };
 
-  // v19 names are unique so an older cached custom element cannot win.
   define('reference-glow-cards-editor', ReferenceCardsEditor);
-  define('reference-basic-light-card', ReferenceBasicLightCard);
-  define('reference-brightness-light-card', ReferenceBrightnessLightCard);
-  define('reference-person-picture-card', ReferencePersonCard);
-  define('reference-sensor-state-card', ReferenceSensorCard);
-  define('reference-thermostat-card', ReferenceThermostatCard);
-  define('reference-navigation-card', ReferenceNavigationCard);
-
-  // Earlier compatible names are registered when they are still free.
-  if (!customElements.get('reference-glow-cards-editor')) define('reference-glow-cards-editor', class extends ReferenceCardsEditor {});
-  if (!customElements.get('reference-basic-light-card')) define('reference-basic-light-card', class extends ReferenceBasicLightCard {});
-  if (!customElements.get('reference-brightness-light-card')) define('reference-brightness-light-card', class extends ReferenceBrightnessLightCard {});
-  if (!customElements.get('reference-person-picture-card')) define('reference-person-picture-card', class extends ReferencePersonCard {});
-  if (!customElements.get('reference-sensor-state-card')) define('reference-sensor-state-card', class extends ReferenceSensorCard {});
-  if (!customElements.get('reference-thermostat-card')) define('reference-thermostat-card', class extends ReferenceThermostatCard {});
-  if (!customElements.get('reference-navigation-card')) define('reference-navigation-card', class extends ReferenceNavigationCard {});
-
-  // Legacy aliases only when not already claimed by another resource.
-  if (!customElements.get('basic-light-card')) define('basic-light-card', class extends ReferenceBasicLightCard {});
-  if (!customElements.get('brightness-light-card')) define('brightness-light-card', class extends ReferenceBrightnessLightCard {});
-  if (!customElements.get('person-picture-card')) define('person-picture-card', class extends ReferencePersonCard {});
-  if (!customElements.get('sensor-state-card')) define('sensor-state-card', class extends ReferenceSensorCard {});
-  if (!customElements.get('thermostat-card')) define('thermostat-card', class extends ReferenceThermostatCard {});
-  if (!customElements.get('navigation-card')) define('navigation-card', class extends ReferenceNavigationCard {});
+  const definitions = [
+    { kind:'basic', reference:'reference-basic-light-card', alias:'basic-light-card', klass:ReferenceBasicLightCard, name:'Reference · Light', description:'State-aware light card' },
+    { kind:'brightness', reference:'reference-brightness-light-card', alias:'brightness-light-card', klass:ReferenceBrightnessLightCard, name:'Reference · Dimmable Light', description:'Dimmable light card with glowing slider' },
+    { kind:'person', reference:'reference-person-picture-card', alias:'person-picture-card', klass:ReferencePersonCard, name:'Reference · Person', description:'Presence-colored person card with optional battery entity' },
+    { kind:'sensor', reference:'reference-sensor-state-card', alias:'sensor-state-card', klass:ReferenceSensorCard, name:'Reference · Sensor', description:'Sensor card with templated activity and color' },
+    { kind:'thermostat', reference:'reference-thermostat-card', alias:'thermostat-card', klass:ReferenceThermostatCard, name:'Reference · Thermostat', description:'Climate card with target temperature controls' },
+    { kind:'navigation', reference:'reference-navigation-card', alias:'navigation-card', klass:ReferenceNavigationCard, name:'Reference · Navigation', description:'Navigation card with templated color' },
+  ];
+  for (const definition of definitions) {
+    definition.klass.getConfigElement = () => editorFor(definition.kind);
+    define(definition.reference, definition.klass);
+    if (!customElements.get(definition.alias)) {
+      define(definition.alias, class extends definition.klass {});
+    }
+  }
 
   window.customCards = window.customCards || [];
-  const cards = [
-    { type:'reference-basic-light-card', name:'Reference · Light', description:'State-aware amber light card', preview:true },
-    { type:'reference-brightness-light-card', name:'Reference · Dimmable Light', description:'State-aware dimmable card with glowing slider', preview:true },
-    { type:'reference-person-picture-card', name:'Reference · Person', description:'Presence-colored person card with optional battery entity', preview:true },
-    { type:'reference-sensor-state-card', name:'Reference · Sensor', description:'Dark inactive / blue active sensor with separate activity entity and state-aware icons', preview:true },
-    { type:'reference-thermostat-card', name:'Reference · Thermostat', description:'Climate card with target between minus/plus controls and per-state colors', preview:true },
-    { type:'reference-navigation-card', name:'Reference · Navigation', description:'Glass navigation card with explicit name and subtext', preview:true },
-  ];
-  for (const card of cards) {
+  for (const { reference:type, name, description } of definitions) {
+    const card = { type, name, description, preview:true };
     if (!window.customCards.some((item) => item.type === card.type)) window.customCards.push(card);
   }
 
