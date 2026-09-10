@@ -29,6 +29,7 @@ views:
             entity: person.glow_demo
             name: Demo resident
             battery_entity: input_number.glow_battery
+            charging_entity: input_boolean.glow_battery_charging
           - type: custom:sensor-state-card
             entity: sensor.outside_temperature
             active_template: "{{ is_state('input_boolean.glow_sensor_active', 'on') }}"
@@ -37,11 +38,13 @@ views:
           - type: custom:sensor-state-card
             entity: sensor.outside_humidity
             name: Outside humidity
+            subicon: mdi:water-percent
           - type: entities
             title: Sample controls
             entities:
               - input_boolean.glow_sensor_active
               - input_number.glow_battery
+              - input_boolean.glow_battery_charging
       - type: grid
         cards:
           - type: heading
@@ -56,6 +59,7 @@ views:
             name: Native cards
             subtitle: Compare with Home Assistant defaults
             icon: mdi:view-dashboard
+            color: "{{ '#7489ff' }}"
             navigation_path: /glow-cards/native
   - title: Native cards
     path: native

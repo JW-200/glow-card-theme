@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '16.0.8';
+  const VERSION = '16.0.12';
   const stylesheetUrl = new URL(`./glow-card.css?v=${VERSION}`, import.meta.url);
   const devRevision = new URL(import.meta.url).searchParams.get('dev');
   if (devRevision) stylesheetUrl.searchParams.set('dev', devRevision);
@@ -134,7 +134,7 @@
       this._activeTemplateResult = undefined;
       this._activeTemplateError = false;
       for (const [key, field] of Object.entries(value || {})) {
-        const entries = key.endsWith('_color') ? [[[key], field]] : [];
+        const entries = (key === 'color' || key.endsWith('_color')) ? [[[key], field]] : [];
         for (const [path, color] of entries) {
           if (typeof color !== 'string' || !/\{[{%#]/.test(color)) continue;
           this._colorTemplates.push({ path, template:color });
@@ -722,9 +722,34 @@
       });
     }
 
-    batteryIcon(value, availableState) {
+    locationIcon(state, presence) {
+      const raw = String(state?.state || '').trim();
+      const normalized = raw.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      const zone = Object.values(this._hass?.states || {}).find((candidate) => {
+        if (!candidate?.entity_id?.startsWith('zone.')) return false;
+        if (presence === 'home') return candidate.entity_id === 'zone.home';
+        const objectId = candidate.entity_id.slice(5).toLowerCase();
+        const friendlyName = String(candidate.attributes?.friendly_name || '').trim().toLowerCase();
+        return presence === 'zone' && (objectId === normalized || friendlyName === raw.toLowerCase());
+      });
+      return zone?.attributes?.icon ||
+        (presence === 'home' ? ICONS.home : presence === 'zone' ? ICONS.zone : presence === 'away' ? ICONS.away : ICONS.unknown);
+    }
+
+    isCharging(batteryState) {
+      const chargingState = this.config.charging_entity ? this.entity(this.config.charging_entity) : null;
+      const attributes = [chargingState?.attributes, batteryState?.attributes];
+      const values = [
+        chargingState?.state,
+        ...attributes.flatMap((item) => item ? [item.charging, item.is_charging, item.battery_charging, item.status, item.battery_status] : []),
+      ];
+      return values.some((value) => value === true || ['on','true','yes','charging'].includes(String(value ?? '').trim().toLowerCase()));
+    }
+
+    batteryIcon(value, availableState, charging = false) {
       if (!availableState || !Number.isFinite(value)) return ICONS.batteryUnknown;
       const level = clamp(Math.round(value / 10) * 10, 10, 100);
+      if (charging) return `mdi:battery-charging-${level}`;
       return level >= 100 ? 'mdi:battery' : `mdi:battery-${level}`;
     }
 
@@ -753,7 +778,7 @@
 
       this.shadowRoot.querySelector('.name').textContent = displayName;
       this.shadowRoot.querySelector('.state').textContent = isAvailable ? this.stateText(state) : 'Unavailable';
-      const badgeIcon = presence === 'home' ? ICONS.home : presence === 'zone' ? ICONS.zone : presence === 'away' ? ICONS.away : ICONS.unknown;
+      const badgeIcon = this.locationIcon(state, presence);
       const picture = state.attributes?.entity_picture;
       this.shadowRoot.querySelector('.avatar').innerHTML = picture
         ? `<img class="portrait" alt="" src="${escapeHtml(picture)}"><span class="badge badge-face" aria-hidden="true"><ha-icon icon="${badgeIcon}"></ha-icon></span>`
@@ -768,11 +793,14 @@
         const numeric = Number(batteryState?.state);
         const hasNumber = batteryAvailable && Number.isFinite(numeric);
         const unit = String(batteryState?.attributes?.unit_of_measurement || (hasNumber ? '%' : '')).trim();
+        const charging = this.isCharging(batteryState);
         this.shadowRoot.querySelectorAll('.battery-icon').forEach((icon) => {
-          icon.icon = this.batteryIcon(numeric, batteryAvailable);
+          icon.icon = this.batteryIcon(numeric, batteryAvailable, charging);
         });
-        battery.setAttribute('title', batteryAvailable ? `Battery ${String(batteryState.state)}${unit ? ` ${unit}` : ''}` : 'Battery unavailable');
-        battery.setAttribute('aria-label', `Battery: ${batteryAvailable ? String(batteryState.state) + (unit ? ` ${unit}` : '') : 'Unavailable'}. More details`);
+        const chargingText = charging ? ' · Charging' : '';
+        battery.classList.toggle('charging', charging);
+        battery.setAttribute('title', batteryAvailable ? `Battery ${String(batteryState.state)}${unit ? ` ${unit}` : ''}${chargingText}` : 'Battery unavailable');
+        battery.setAttribute('aria-label', `Battery: ${batteryAvailable ? String(batteryState.state) + (unit ? ` ${unit}` : '') + (charging ? ', charging' : '') : 'Unavailable'}. More details`);
       }
     }
 
@@ -872,6 +900,10 @@
         ICONS.sensor;
 
       this.shadowRoot.querySelector('.main-icon').icon = sensorIcon;
+      const subicon = this.config.subicon || ICONS.info;
+      this.shadowRoot
+        .querySelectorAll('.info-button > ha-icon, .info-button .compact-action ha-icon')
+        .forEach((icon) => { icon.icon = subicon; });
 
       const activityText = usesActiveTemplate
         ? `; active ${isActive ? 'yes' : 'no'}`
@@ -1384,7 +1416,7 @@
     update() {
       const card = this.shadowRoot.querySelector('.card');
       if (!card) return;
-      const accent = stateColor(this.config, 'active', 'active_color', [116,137,255]);
+      const accent = stateColor(this.config, 'active', 'color', [116,137,255]);
       setAccent(card, accent, accent);
       this.shadowRoot.querySelector('.main-icon').icon = this.config.icon || ICONS.navigate;
       const name = this.config.name || 'Navigate';
@@ -1418,8 +1450,8 @@
       ];
       if (this.kind === 'basic') return [...common, { name:'icon_on', selector:{ icon:{} } }, { name:'icon_off', selector:{ icon:{} } }, { name:'active_color', selector:{ color_rgb:{} } }];
       if (this.kind === 'brightness') return [...common, { name:'icon_on', selector:{ icon:{} } }, { name:'icon_off', selector:{ icon:{} } }, { name:'active_color', selector:{ color_rgb:{} } }];
-      if (this.kind === 'person') return [...common, { name:'battery_entity', selector:{ entity:{} } }, { name:'home_color', selector:{ color_rgb:{} } }, { name:'zone_color', selector:{ color_rgb:{} } }, { name:'away_color', selector:{ color_rgb:{} } }, { name:'unknown_color', selector:{ color_rgb:{} } }];
-      if (this.kind === 'sensor') return [...common, { name:'unit', selector:{ text:{} } }, { name:'active_template', selector:{ template:{} } }, { name:'icon_active', selector:{ icon:{} } }, { name:'icon_inactive', selector:{ icon:{} } }, { name:'active_color', selector:{ color_rgb:{} } }];
+      if (this.kind === 'person') return [...common, { name:'battery_entity', selector:{ entity:{} } }, { name:'charging_entity', selector:{ entity:{} } }, { name:'home_color', selector:{ color_rgb:{} } }, { name:'zone_color', selector:{ color_rgb:{} } }, { name:'away_color', selector:{ color_rgb:{} } }, { name:'unknown_color', selector:{ color_rgb:{} } }];
+      if (this.kind === 'sensor') return [...common, { name:'unit', selector:{ text:{} } }, { name:'active_template', selector:{ template:{} } }, { name:'icon_active', selector:{ icon:{} } }, { name:'icon_inactive', selector:{ icon:{} } }, { name:'subicon', selector:{ icon:{} } }, { name:'active_color', selector:{ color_rgb:{} } }];
       if (this.kind === 'thermostat') return [
         { name:'entity', required:true, selector:{ entity:{ domain:'climate' } } },
         { name:'name', selector:{ text:{} } },
@@ -1438,6 +1470,7 @@
         { name:'name', selector:{ text:{} } },
         { name:'subtitle', selector:{ text:{} } },
         { name:'icon', selector:{ icon:{} } },
+        { name:'color', selector:{ template:{} } },
       ];
       return common;
     }
@@ -1449,7 +1482,7 @@
         this.shadowRoot.querySelector('ha-form').addEventListener('value-changed', (event) => {
           event.stopPropagation();
           const next = { ...this._config, ...event.detail.value };
-          for (const key of ['name','friendly_name','subtitle','subtext','icon','icon_on','icon_off','icon_active','icon_inactive','icon_heating','icon_cooling','icon_idle','unit','brightness_entity','battery_entity','active_entity','active_state','active_template','temperature_step','navigation_path','active_color','inactive_color','home_color','zone_color','away_color','unknown_color','heating_color','cooling_color','idle_color','off_color']) {
+          for (const key of ['name','friendly_name','subtitle','subtext','icon','icon_on','icon_off','icon_active','icon_inactive','subicon','icon_heating','icon_cooling','icon_idle','unit','brightness_entity','battery_entity','charging_entity','active_entity','active_state','active_template','temperature_step','navigation_path','color','active_color','inactive_color','home_color','zone_color','away_color','unknown_color','heating_color','cooling_color','idle_color','off_color']) {
             if (next[key] === '' || next[key] == null) delete next[key];
           }
           this._config = next;
@@ -1461,11 +1494,11 @@
       const form = this.shadowRoot.querySelector('ha-form');
       form.hass = this._hass;
       form.data = Object.fromEntries(Object.entries(this._config).map(([key, value]) =>
-        [key, key.endsWith('_color') && Array.isArray(value) ? JSON.stringify(value) : value]
+        [key, (key === 'color' || key.endsWith('_color')) && Array.isArray(value) ? JSON.stringify(value) : value]
       ));
       const schema = this.schema();
       if (['basic', 'brightness'].includes(this.kind)) schema.push({ name:'inactive_color', selector:{ text:{} } });
-      form.schema = schema.map((field) => field.name.endsWith('_color')
+      form.schema = schema.map((field) => (field.name === 'color' || field.name.endsWith('_color'))
         ? { ...field, selector:{ template:{} } } : field);
       form.computeLabel = (schema) => ({
         entity:'Entity',
@@ -1478,12 +1511,15 @@
         active_template:'Active template (true / false)',
         icon_active:'Active-state icon override',
         icon_inactive:'Inactive-state icon override',
+        subicon:'Subicon',
         battery_entity:'Battery entity',
+        charging_entity:'Charging entity (optional)',
         temperature_step:'Temperature adjustment step',
         icon_heating:'Heating icon override',
         icon_cooling:'Cooling icon override',
         icon_idle:'Idle icon override',
         navigation_path:'Navigation path (for example /lovelace/bedroom)',
+        color:'Color',
         active_color:'Active / highlight color',
         home_color:'Home color',
         zone_color:'Known-place color',

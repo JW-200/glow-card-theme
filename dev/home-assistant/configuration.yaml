@@ -35,6 +35,9 @@ input_boolean:
   glow_sensor_active:
     name: Sensor active highlight
     initial: true
+  glow_battery_charging:
+    name: Demo phone charging
+    initial: true
 
 input_number:
   glow_battery:

@@ -2362,7 +2362,7 @@
   gap:8px !important;
 }
 .grid-2-row .temp-button { width:36px !important; height:36px !important; }
-.grid-2-row .target-display { padding:6px 10px !important; border-radius:11px !important; }
+.grid-2-row .target-display { height:36px !important; box-sizing:border-box !important; padding:6px 10px !important; border-radius:11px !important; }
 .grid-2-row .target { font-size:22px !important; }
 .grid-2-row .target-unit { font-size:12px !important; }
 /* Keep section dimensions authoritative over legacy narrow-card reflow rules. */
@@ -2567,4 +2567,57 @@
 :host(person-picture-card) .grid-1-row .badge {
   top:var(--subicon-edge-y) !important;
   right:var(--subicon-edge-x) !important;
+}
+
+/* Sensor cards reverse the usual text emphasis: the reading is the primary
+   line and the entity name uses the normal supporting-text treatment. */
+:host(reference-sensor-state-card) .grid-1-row .sensor-label,
+:host(sensor-state-card) .grid-1-row .sensor-label {
+  color:#87919d !important;
+  font-size:12px !important;
+  font-weight:430 !important;
+  line-height:1.1 !important;
+}
+:host(reference-sensor-state-card) .grid-1-row .reading,
+:host(sensor-state-card) .grid-1-row .reading {
+  margin-top:2px !important;
+  line-height:1.05 !important;
+}
+:host(reference-sensor-state-card) .grid-1-row .reading .value,
+:host(sensor-state-card) .grid-1-row .reading .value {
+  font-size:14px !important;
+  font-weight:760 !important;
+  letter-spacing:-.1px !important;
+}
+:host(reference-sensor-state-card) .grid-1-row .reading .unit,
+:host(sensor-state-card) .grid-1-row .reading .unit {
+  font-size:11px !important;
+  font-weight:520 !important;
+}
+
+/* Use one measured gap for every headline and supporting line. */
+:host .card .content {
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:center !important;
+  gap:2px !important;
+}
+:host .card .content > :is(.name, .state, .subtext, .sensor-label, .reading, .current) {
+  margin-top:0 !important;
+  margin-bottom:0 !important;
+}
+
+/* Keep the thermostat controls stable and scale only their text. */
+@container (max-width:260px) {
+  :host(reference-thermostat-card) .grid-2-row .target,
+  :host(thermostat-card) .grid-2-row .target { font-size:18px !important; }
+  :host(reference-thermostat-card) .grid-2-row .target-unit,
+  :host(thermostat-card) .grid-2-row .target-unit { font-size:10px !important; }
+}
+
+@container (max-width:200px) {
+  :host(reference-thermostat-card) .grid-2-row .target,
+  :host(thermostat-card) .grid-2-row .target { font-size:15px !important; }
+  :host(reference-thermostat-card) .grid-2-row .target-unit,
+  :host(thermostat-card) .grid-2-row .target-unit { font-size:9px !important; }
 }
