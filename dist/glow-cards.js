@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '16.1.16';
+  const VERSION = '16.1.17';
   const stylesheetUrl = new URL(`./glow-card.css?v=${VERSION}`, import.meta.url);
   const devRevision = new URL(import.meta.url).searchParams.get('dev');
   if (devRevision) stylesheetUrl.searchParams.set('dev', devRevision);
@@ -113,32 +113,38 @@
       this._held = false;
     }
 
-    set hass(value) { this._hass = value; this.startColorTemplates(); this.update(); }
+    set hass(value) { this._hass = value; this.startTemplates(); this.update(); }
     get hass() { return this._hass; }
 
     get config() { return this._config; }
     set config(value) {
-      this.stopColorTemplates();
+      this.stopTemplates();
       this._rawConfig = value;
       this._config = value ? { ...value } : null;
-      this._colorTemplates = [];
+      this._templates = [];
       this._activeTemplateResult = undefined;
       this._activeTemplateError = false;
       for (const [field, color] of Object.entries(value || {})) {
         if (field !== 'color' && !field.endsWith('_color')) continue;
         if (typeof color !== 'string' || !/\{[{%#]/.test(color)) continue;
-        this._colorTemplates.push({ field, template:color });
+        this._templates.push({ field, template:color });
+        delete this._config[field];
+      }
+      for (const field of ['name','friendly_name','unit']) {
+        const template = value?.[field];
+        if (typeof template !== 'string' || !/\{[{%#]/.test(template)) continue;
+        this._templates.push({ kind:'text', field, template });
         delete this._config[field];
       }
       if (typeof value?.active_template === 'string' && value.active_template.trim()) {
-        this._colorTemplates.push({ kind:'active', template:value.active_template });
+        this._templates.push({ kind:'active', template:value.active_template });
       }
-      this.startColorTemplates();
+      this.startTemplates();
     }
 
-    connectedCallback() { this.startColorTemplates(); }
+    connectedCallback() { this.startTemplates(); }
 
-    stopColorTemplates() {
+    stopTemplates() {
       this._templateGeneration = (this._templateGeneration || 0) + 1;
       for (const unsubscribe of this._templateUnsubscribers || []) {
         Promise.resolve().then(unsubscribe).catch((error) => console.debug('[Glow] Template cleanup', error));
@@ -147,13 +153,13 @@
       this._templateConnection = null;
     }
 
-    startColorTemplates() {
+    startTemplates() {
       const connection = this._hass?.connection;
-      if (!this.isConnected || !connection || !this._colorTemplates?.length || this._templateConnection === connection) return;
-      this.stopColorTemplates();
+      if (!this.isConnected || !connection || !this._templates?.length || this._templateConnection === connection) return;
+      this.stopTemplates();
       this._templateConnection = connection;
       const generation = this._templateGeneration;
-      for (const { kind = 'color', field, template } of this._colorTemplates) {
+      for (const { kind = 'color', field, template } of this._templates) {
         const apply = (message) => {
           if (generation !== this._templateGeneration) return;
           if (kind === 'active') {
@@ -165,9 +171,11 @@
           }
           if (message.error) {
             delete this._config[field];
-            notify(this, `Color template (${field}): ${message.error}`);
+            notify(this, `${kind === 'text' ? 'Text' : 'Color'} template (${field}): ${message.error}`);
           } else {
-            this._config[field] = message.result;
+            this._config[field] = kind === 'text'
+              ? String(message.result ?? '').trim()
+              : message.result;
           }
           this.update();
         };
@@ -1436,7 +1444,7 @@
       ));
       const schema = this.schema();
       if (['basic', 'brightness'].includes(this.kind)) schema.push({ name:'inactive_color', selector:{ text:{} } });
-      form.schema = schema.map((field) => (field.name === 'color' || field.name.endsWith('_color'))
+      form.schema = schema.map((field) => (['name','unit'].includes(field.name) || field.name === 'color' || field.name.endsWith('_color'))
         ? { ...field, selector:{ template:{} } } : field);
       form.computeLabel = (schema) => ({
         entity:'Entity',
