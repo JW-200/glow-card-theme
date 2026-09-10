@@ -48,8 +48,8 @@
       --accent-rgb:255,190,57;
       --accent2-rgb:115,151,255;
       --accent:rgb(var(--accent-rgb));
-      --subicon-edge-x:-5px;
-      --subicon-edge-y:-3px;
+      --subicon-edge-x:-6px;
+      --subicon-edge-y:-4px;
 
       position:relative;
       isolation:isolate;
@@ -1542,14 +1542,14 @@
 .grid-1-row .badge {
   top:-1px !important;
   right:-1px !important;
-  width:18px !important;
-  height:18px !important;
+  width:20px !important;
+  height:20px !important;
   border-width:1px !important;
 }
 .grid-1-row .badge ha-icon {
-  --mdc-icon-size:10px !important;
-  width:10px !important;
-  height:10px !important;
+  --mdc-icon-size:12px !important;
+  width:12px !important;
+  height:12px !important;
 }
 .grid-2-row.thermostat-card {
   grid-template-columns:52px minmax(0,1fr) !important;
@@ -1664,8 +1664,8 @@
     inset:auto var(--subicon-edge-x) var(--subicon-edge-y) auto !important;
     display:grid !important;
     place-items:center;
-    width:18px !important;
-    height:18px !important;
+    width:20px !important;
+    height:20px !important;
     min-width:0 !important;
     padding:0 !important;
     border:0 !important;
@@ -1682,14 +1682,14 @@
   :host .icon-control > .nav-action > ha-icon { display:none !important; }
   :host .icon-control .compact-action {
     display:grid;
-    width:18px;
-    height:18px;
+    width:20px;
+    height:20px;
     border-width:1px;
   }
   :host .icon-control .compact-action ha-icon {
-    --mdc-icon-size:10px !important;
-    width:10px !important;
-    height:10px !important;
+    --mdc-icon-size:12px !important;
+    width:12px !important;
+    height:12px !important;
   }
 }
 
