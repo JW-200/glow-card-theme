@@ -1494,7 +1494,7 @@
   width:20px !important;
   height:20px !important;
 }
-.grid-1-row .name { font-size:18px !important; }
+.grid-1-row .name { font-size:17px !important; }
 .grid-1-row .state { margin-top:2px !important; font-size:14px !important; }
 .grid-1-row .subtext { display:none !important; }
 .grid-1-row .switch { --w:48px !important; --h:28px !important; --knob:20px !important; padding:4px !important; }
@@ -1531,7 +1531,7 @@
   width:25px !important;
   height:25px !important;
 }
-.grid-2-row .name { font-size:18px !important; }
+.grid-2-row .name { font-size:17px !important; }
 .grid-2-row .state { margin-top:3px !important; font-size:14px !important; }
 .grid-2-row .subtext { margin-top:3px !important; font-size:14px !important; }
 .grid-1-row .portrait,
@@ -1769,7 +1769,7 @@
   line-height:1.05 !important;
 }
 :host(:is(reference-sensor-state-card, sensor-state-card)) .grid-1-row .reading .value {
-  font-size:18px !important;
+  font-size:17px !important;
   font-weight:760 !important;
   letter-spacing:-.1px !important;
 }
@@ -1819,7 +1819,7 @@
    the visible icon and slider equally far from the card edges. */
 :host(:is(reference-brightness-light-card, brightness-light-card)) .card.grid-2-row {
   grid-template-rows:52px 18px !important;
-  row-gap:12px !important;
+  row-gap:16px !important;
   align-content:center !important;
   padding-top:12px !important;
   padding-bottom:12px !important;
@@ -1876,6 +1876,17 @@
   :host .card.grid-2-row {
     padding-left:4px !important;
     padding-right:4px !important;
+  }
+
+  :host .card.grid-2-row:is(.light-card, .thermostat-card) > .icon-shell {
+    width:48px !important;
+    height:48px !important;
+  }
+
+  :host .card.grid-2-row:is(.light-card, .thermostat-card) > .icon-shell ha-icon {
+    --mdc-icon-size:23px !important;
+    width:23px !important;
+    height:23px !important;
   }
 }
 
