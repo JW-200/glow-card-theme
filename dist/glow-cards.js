@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '16.1.18';
+  const VERSION = '16.1.19';
   const stylesheetUrl = new URL(`./glow-card.css?v=${VERSION}`, import.meta.url);
   const devRevision = new URL(import.meta.url).searchParams.get('dev');
   if (devRevision) stylesheetUrl.searchParams.set('dev', devRevision);
@@ -87,10 +87,25 @@
   const configuredColor = (config, field, fallback) => rgbTriplet(config?.[field], fallback);
   // HA publishes normalized rgb_color for its supported color modes.
   const lightColor = (state) => state?.attributes?.rgb_color ?? [255,190,57];
+  const accentCache = new WeakMap();
   const setAccent = (card, rgb, rgb2 = rgb) => {
     if (!card) return;
-    card.style.setProperty('--accent-rgb', rgb);
-    card.style.setProperty('--accent2-rgb', rgb2);
+    const next = `${String(rgb)}|${String(rgb2)}`;
+    if (accentCache.get(card) === next) return;
+    accentCache.set(card, next);
+    card.style.setProperty('--accent-rgb', String(rgb));
+    card.style.setProperty('--accent2-rgb', String(rgb2));
+  };
+  const numberFormatters = new Map();
+  const numberFormatter = (locale, minimumFractionDigits = 0, maximumFractionDigits = minimumFractionDigits) => {
+    const key = `${locale}|${minimumFractionDigits}|${maximumFractionDigits}`;
+    if (!numberFormatters.has(key)) {
+      numberFormatters.set(key, new Intl.NumberFormat(locale, {
+        minimumFractionDigits,
+        maximumFractionDigits,
+      }));
+    }
+    return numberFormatters.get(key);
   };
   const available = (state) => Boolean(state && !['unknown', 'unavailable'].includes(String(state.state).toLowerCase()));
   const active = (state) => Boolean(state && ACTIVE_STATES.has(String(state.state).toLowerCase()));
@@ -383,11 +398,18 @@
       const button = this.shadowRoot.querySelector('button.control');
       this.bindCard(card, () => this.toggle());
       button.addEventListener('click', (event) => { event.stopPropagation(); this.toggle(); });
+      this._els = {
+        card,
+        button,
+        name:this.shadowRoot.querySelector('.name'),
+        state:this.shadowRoot.querySelector('.state'),
+        mainIcon:this.shadowRoot.querySelector('.main-icon'),
+      };
     }
 
     update() {
       const state = this.entity();
-      const card = this.shadowRoot.querySelector('.card');
+      const { card, button, name, state:stateEl, mainIcon } = this._els || {};
       if (!state || !card) return;
       const isOn = active(state);
       const isAvailable = available(state);
@@ -398,12 +420,11 @@
       card.setAttribute('aria-disabled', String(!isAvailable));
       card.setAttribute('aria-label', `${this.name(state,'Light')}: ${isAvailable ? (isOn ? 'On' : 'Off') : 'Unavailable'}`);
 
-      this.shadowRoot.querySelector('.name').textContent = this.name(state,'Light');
-      this.shadowRoot.querySelector('.state').textContent = isAvailable ? (isOn ? 'On' : 'Off') : 'Unavailable';
-      this.shadowRoot.querySelector('.main-icon').icon = this.stateIcon(state, ICONS.light);
-      const control = this.shadowRoot.querySelector('button.control');
-      control.disabled = !isAvailable;
-      control.setAttribute('aria-pressed', String(isOn));
+      name.textContent = this.name(state,'Light');
+      stateEl.textContent = isAvailable ? (isOn ? 'On' : 'Off') : 'Unavailable';
+      mainIcon.icon = this.stateIcon(state, ICONS.light);
+      button.disabled = !isAvailable;
+      button.setAttribute('aria-pressed', String(isOn));
     }
 
     static getStubConfig(hass) {
@@ -459,6 +480,18 @@
 
       const card = this.shadowRoot.querySelector('.card');
       const slider = this.shadowRoot.querySelector('input[type=range]');
+      this._els = {
+        card,
+        slider,
+        track:this.shadowRoot.querySelector('.track'),
+        percent:this.shadowRoot.querySelector('.percent'),
+        tooltip:this.shadowRoot.querySelector('.slider-tooltip'),
+        name:this.shadowRoot.querySelector('.name'),
+        state:this.shadowRoot.querySelector('.state'),
+        mainIcon:this.shadowRoot.querySelector('.main-icon'),
+      };
+      this._lastPaintPct = undefined;
+      this._lastBrightnessVisualPct = undefined;
 
       this.bindCard(card, () => this.toggle());
 
@@ -538,10 +571,12 @@
     }
 
     applyBrightnessVisual(value) {
-      const card = this.shadowRoot.querySelector('.card');
+      const card = this._els?.card;
       if (!card) return;
 
       const pct = clamp(Math.round(Number(value) || 0), 0, 100);
+      if (this._lastBrightnessVisualPct === pct) return;
+      this._lastBrightnessVisualPct = pct;
       const level = pct / 100;
 
       /*
@@ -580,10 +615,9 @@
 
     paint(value) {
       const pct = clamp(Math.round(Number(value) || 0), 0, 100);
-      const slider = this.shadowRoot.querySelector('input[type=range]');
-      const track = this.shadowRoot.querySelector('.track');
-      const percent = this.shadowRoot.querySelector('.percent');
-      const tooltip = this.shadowRoot.querySelector('.slider-tooltip');
+      if (this._lastPaintPct === pct) return;
+      this._lastPaintPct = pct;
+      const { slider, track, percent, tooltip } = this._els || {};
 
       if (!slider || !track) return;
 
@@ -648,7 +682,7 @@
 
     update() {
       const state = this.entity();
-      const card = this.shadowRoot.querySelector('.card');
+      const { card, name, state:stateEl, mainIcon, slider } = this._els || {};
 
       if (!state || !card) return;
 
@@ -677,18 +711,15 @@
       card.setAttribute('aria-pressed', String(isOn));
       card.setAttribute('aria-disabled', String(!isAvailable));
 
-      this.shadowRoot.querySelector('.name').textContent =
-        this.name(state,'Dimmable Light');
+      name.textContent = this.name(state,'Dimmable Light');
 
-      this.shadowRoot.querySelector('.state').textContent =
+      stateEl.textContent =
         isAvailable
           ? (isOn ? 'On' : 'Off')
           : 'Unavailable';
 
-      this.shadowRoot.querySelector('.main-icon').icon =
-        this.stateIcon(state, ICONS.light);
+      mainIcon.icon = this.stateIcon(state, ICONS.light);
 
-      const slider = this.shadowRoot.querySelector('input[type=range]');
       slider.disabled = !canDim;
 
       if (!this._editing) {
@@ -740,30 +771,49 @@
         </div>`;
       attachStyles(this.shadowRoot);
 
-      this.bindCard(this.shadowRoot.querySelector('.card'), () => moreInfo(this, this.config.entity));
-      this.shadowRoot.querySelector('.battery-status').addEventListener('click', (event) => {
+      const card = this.shadowRoot.querySelector('.card');
+      const battery = this.shadowRoot.querySelector('.battery-status');
+      this.bindCard(card, () => moreInfo(this, this.config.entity));
+      battery.addEventListener('click', (event) => {
         event.stopPropagation();
         if (this.config.battery_entity) moreInfo(this, this.config.battery_entity);
       });
+      this._els = {
+        card,
+        battery,
+        avatar:this.shadowRoot.querySelector('.avatar'),
+        name:this.shadowRoot.querySelector('.name'),
+        state:this.shadowRoot.querySelector('.state'),
+        batteryIcons:[...this.shadowRoot.querySelectorAll('.battery-icon')],
+        locationIcon:null,
+      };
+      this._presence = null;
+      this._avatarKey = null;
     }
 
     locationIcon(state, presence) {
       const raw = String(state?.state || '').trim();
       const normalized = raw.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-      const zone = Object.values(this._hass?.states || {}).find((candidate) => {
-        if (!candidate?.entity_id?.startsWith('zone.')) return false;
-        if (presence === 'home') return candidate.entity_id === 'zone.home';
-        const objectId = candidate.entity_id.slice(5).toLowerCase();
-        const friendlyName = String(candidate.attributes?.friendly_name || '').trim().toLowerCase();
-        return presence === 'zone' && (objectId === normalized || friendlyName === raw.toLowerCase());
-      });
+      const states = this._hass?.states || {};
+      let zone = presence === 'home'
+        ? states['zone.home']
+        : presence === 'zone'
+          ? states[`zone.${normalized}`]
+          : null;
+      if (!zone && presence === 'zone') {
+        const normalizedName = raw.toLowerCase();
+        zone = Object.values(states).find((candidate) =>
+          candidate?.entity_id?.startsWith('zone.') &&
+          String(candidate.attributes?.friendly_name || '').trim().toLowerCase() === normalizedName
+        );
+      }
       return zone?.attributes?.icon ||
         (presence === 'home' ? ICONS.home : presence === 'zone' ? ICONS.zone : presence === 'away' ? ICONS.away : ICONS.unknown);
     }
 
     update() {
       const state = this.entity();
-      const card = this.shadowRoot.querySelector('.card');
+      const { card, battery, avatar, name, state:stateEl, batteryIcons } = this._els || {};
       if (!state || !card) return;
       const isAvailable = available(state);
       const raw = isAvailable ? String(state.state) : 'unknown';
@@ -778,21 +828,31 @@
       };
       setAccent(card, presenceColors[presence], presenceColors[presence]);
 
-      card.classList.remove('person-home','person-zone','person-away','person-unknown');
-      card.classList.add(`person-${presence}`);
+      if (this._presence !== presence) {
+        if (this._presence) card.classList.remove(`person-${this._presence}`);
+        card.classList.add(`person-${presence}`);
+        this._presence = presence;
+      }
       card.classList.toggle('active', presence === 'home' || presence === 'zone');
       card.classList.toggle('unavailable', !isAvailable);
-      card.setAttribute('aria-label', `${displayName}: ${isAvailable ? this.stateText(state) : 'Unavailable'}`);
+      const stateText = isAvailable ? this.stateText(state) : 'Unavailable';
+      card.setAttribute('aria-label', `${displayName}: ${stateText}`);
 
-      this.shadowRoot.querySelector('.name').textContent = displayName;
-      this.shadowRoot.querySelector('.state').textContent = isAvailable ? this.stateText(state) : 'Unavailable';
+      name.textContent = displayName;
+      stateEl.textContent = stateText;
       const badgeIcon = this.locationIcon(state, presence);
       const picture = state.attributes?.entity_picture;
-      this.shadowRoot.querySelector('.avatar').innerHTML = picture
-        ? `<img class="portrait" alt="" src="${escapeHtml(picture)}"><span class="badge badge-face" aria-hidden="true"><ha-icon icon="${badgeIcon}"></ha-icon></span>`
-        : `<div class="fallback"><ha-icon icon="${escapeHtml(state.attributes?.icon || ICONS.person)}"></ha-icon></div><span class="badge badge-face" aria-hidden="true"><ha-icon icon="${badgeIcon}"></ha-icon></span>`;
+      const fallbackIcon = state.attributes?.icon || ICONS.person;
+      const avatarKey = picture ? `picture:${picture}` : `icon:${fallbackIcon}`;
+      if (this._avatarKey !== avatarKey) {
+        avatar.innerHTML = picture
+          ? `<img class="portrait" alt="" src="${escapeHtml(picture)}"><span class="badge badge-face" aria-hidden="true"><ha-icon></ha-icon></span>`
+          : `<div class="fallback"><ha-icon icon="${escapeHtml(fallbackIcon)}"></ha-icon></div><span class="badge badge-face" aria-hidden="true"><ha-icon></ha-icon></span>`;
+        this._avatarKey = avatarKey;
+        this._els.locationIcon = avatar.querySelector('.badge ha-icon');
+      }
+      if (this._els.locationIcon.icon !== badgeIcon) this._els.locationIcon.icon = badgeIcon;
 
-      const battery = this.shadowRoot.querySelector('.battery-status');
       const batteryId = this.config.battery_entity;
       const batteryState = batteryId ? this.entity(batteryId) : null;
       battery.hidden = !batteryId;
@@ -801,7 +861,7 @@
         const unit = String(batteryState?.attributes?.unit_of_measurement || '').trim();
         const batteryIcon = batteryState?.attributes?.icon ||
           (batteryAvailable ? ICONS.battery : ICONS.batteryUnknown);
-        this.shadowRoot.querySelectorAll('.battery-icon').forEach((icon) => {
+        batteryIcons.forEach((icon) => {
           icon.icon = batteryIcon;
         });
         battery.setAttribute('title', batteryAvailable ? `Battery ${String(batteryState.state)}${unit ? ` ${unit}` : ''}` : 'Battery unavailable');
@@ -841,16 +901,27 @@
         </div>`;
       attachStyles(this.shadowRoot);
 
-      this.bindCard(this.shadowRoot.querySelector('.card'), () => moreInfo(this, this.config.entity));
-      this.shadowRoot.querySelector('.info-button').addEventListener('click', (event) => {
+      const card = this.shadowRoot.querySelector('.card');
+      const infoButton = this.shadowRoot.querySelector('.info-button');
+      this.bindCard(card, () => moreInfo(this, this.config.entity));
+      infoButton.addEventListener('click', (event) => {
         event.stopPropagation();
         moreInfo(this, this.config.entity);
       });
+      this._els = {
+        card,
+        infoButton,
+        label:this.shadowRoot.querySelector('.sensor-label'),
+        value:this.shadowRoot.querySelector('.value'),
+        unit:this.shadowRoot.querySelector('.unit'),
+        mainIcon:this.shadowRoot.querySelector('.main-icon'),
+        subicons:[...this.shadowRoot.querySelectorAll('.info-button > ha-icon, .info-button .compact-action ha-icon')],
+      };
     }
 
     update() {
       const state = this.entity();
-      const card = this.shadowRoot.querySelector('.card');
+      const { card, label, value:valueEl, unit:unitEl, mainIcon, subicons } = this._els || {};
       if (!state || !card) return;
 
       const isAvailable = available(state);
@@ -858,9 +929,7 @@
       const numeric = Number(state.state);
       const value = isAvailable
         ? (String(state.state).trim() !== '' && Number.isFinite(numeric)
-          ? new Intl.NumberFormat(this._hass?.locale?.language || 'en', {
-              maximumFractionDigits:2,
-            }).format(numeric)
+          ? numberFormatter(this._hass?.locale?.language || 'en', 0, 2).format(numeric)
           : (this._hass?.formatEntityState?.(state) || String(state.state)))
         : 'Unavailable';
 
@@ -882,10 +951,10 @@
       );
       card.classList.toggle('unavailable', !isAvailable);
 
-      this.shadowRoot.querySelector('.sensor-label').textContent =
-        this.name(state, this.entityLabel(this.config.entity,'Sensor'));
-      this.shadowRoot.querySelector('.value').textContent = value;
-      this.shadowRoot.querySelector('.unit').textContent = isAvailable ? unit : '';
+      const displayName = this.name(state, this.entityLabel(this.config.entity,'Sensor'));
+      label.textContent = displayName;
+      valueEl.textContent = value;
+      unitEl.textContent = isAvailable ? unit : '';
 
       const sensorIcon =
         (isActive
@@ -894,11 +963,9 @@
         state.attributes?.icon ||
         ICONS.sensor;
 
-      this.shadowRoot.querySelector('.main-icon').icon = sensorIcon;
+      mainIcon.icon = sensorIcon;
       const subicon = this.config.subicon || ICONS.info;
-      this.shadowRoot
-        .querySelectorAll('.info-button > ha-icon, .info-button .compact-action ha-icon')
-        .forEach((icon) => { icon.icon = subicon; });
+      subicons.forEach((icon) => { icon.icon = subicon; });
 
       const activityText = usesActiveTemplate
         ? `; active ${isActive ? 'yes' : 'no'}`
@@ -906,7 +973,7 @@
 
       card.setAttribute(
         'aria-label',
-        `${this.name(state,'Sensor')}: ${value}${unit ? ` ${unit}` : ''}${activityText}`
+        `${displayName}: ${value}${unit ? ` ${unit}` : ''}${activityText}`
       );
     }
 
@@ -981,16 +1048,21 @@
       attachStyles(this.shadowRoot);
 
       const card = this.shadowRoot.querySelector('.card');
+      this._els = {
+        card,
+        mainIcon:this.shadowRoot.querySelector('.main-icon'),
+        name:this.shadowRoot.querySelector('.name'),
+        current:this.shadowRoot.querySelector('.current'),
+        target:this.shadowRoot.querySelector('.target'),
+        targetUnit:this.shadowRoot.querySelector('.target-unit'),
+        tempDown:this.shadowRoot.querySelector('.temp-down'),
+        tempUp:this.shadowRoot.querySelector('.temp-up'),
+      };
+      this._visual = null;
       this.bindCard(card, () => moreInfo(this, this.config.entity));
 
-      this.bindTemperatureButton(
-        this.shadowRoot.querySelector('.temp-down'),
-        -1
-      );
-      this.bindTemperatureButton(
-        this.shadowRoot.querySelector('.temp-up'),
-        1
-      );
+      this.bindTemperatureButton(this._els.tempDown, -1);
+      this.bindTemperatureButton(this._els.tempUp, 1);
     }
 
     bindTemperatureButton(button, direction) {
@@ -1022,7 +1094,7 @@
       const stop = (event) => {
         event?.stopPropagation?.();
         this.stopTemperatureHold();
-        this.shadowRoot.querySelector('.thermostat-card')?.classList.remove('control-pressed');
+        this._els?.card?.classList.remove('control-pressed');
       };
 
       button.addEventListener('pointerup', stop);
@@ -1048,8 +1120,7 @@
       this._holdRepeat = null;
     }
 
-    unit() {
-      const state = this.entity();
+    unit(state = this.entity()) {
       return (
         state?.attributes?.temperature_unit ||
         this._hass?.config?.unit_system?.temperature ||
@@ -1057,8 +1128,7 @@
       );
     }
 
-    step() {
-      const state = this.entity();
+    step(state = this.entity()) {
       const configured = Number(this.config?.temperature_step);
       const native = Number(state?.attributes?.target_temp_step);
 
@@ -1133,14 +1203,7 @@
     formatTemp(value) {
       const step = this.step();
       const digits = step < 1 ? 1 : 0;
-
-      return Number(value).toLocaleString(
-        this._hass?.locale?.language || 'en',
-        {
-          minimumFractionDigits:digits,
-          maximumFractionDigits:digits,
-        }
-      );
+      return numberFormatter(this._hass?.locale?.language || 'en', digits, digits).format(Number(value));
     }
 
     adjustDraft(direction) {
@@ -1242,8 +1305,12 @@
 
     update() {
       const state = this.entity();
-      const card = this.shadowRoot.querySelector('.card');
+      const {
+        card, mainIcon, name:nameEl, current:currentEl, target:targetEl,
+        targetUnit, tempDown, tempUp,
+      } = this._els || {};
       if (!state || !card) return;
+      const reportedTarget = this.targetData(state);
 
       /*
        * Once HA reports the value we sent, the local draft is no longer
@@ -1253,7 +1320,7 @@
         this._draftTarget &&
         this._lastSentTarget &&
         this.targetsEqual(this._draftTarget, this._lastSentTarget) &&
-        this.targetsEqual(this.targetData(state), this._lastSentTarget)
+        this.targetsEqual(reportedTarget, this._lastSentTarget)
       ) {
         this._draftTarget = null;
         this._lastSentTarget = null;
@@ -1302,8 +1369,11 @@
 
       setAccent(card, accent, accent);
 
-      card.classList.remove('heating','cooling','idle','off');
-      card.classList.add(visual);
+      if (this._visual !== visual) {
+        if (this._visual) card.classList.remove(this._visual);
+        card.classList.add(visual);
+        this._visual = visual;
+      }
       card.classList.toggle('active', visual === 'heating' || visual === 'cooling');
       card.classList.toggle('unavailable', !isAvailable);
 
@@ -1325,36 +1395,42 @@
               : ICONS.thermostat
         );
 
-      this.shadowRoot.querySelector('.main-icon').icon = icon;
-      this.shadowRoot.querySelector('.name').textContent =
-        this.name(
-          state,
-          this.entityLabel(this.config.entity, 'Thermostat')
-        );
+      const displayName = this.name(
+        state,
+        this.entityLabel(this.config.entity, 'Thermostat')
+      );
+      const unit = this.unit(state);
+      const step = this.step(state);
+      const digits = step < 1 ? 1 : 0;
+      const formatter = numberFormatter(this._hass?.locale?.language || 'en', digits, digits);
+      const formatTemp = (value) => formatter.format(Number(value));
+      const target = this._draftTarget || reportedTarget;
+      const targetText = target.kind === 'single'
+        ? formatTemp(target.value)
+        : target.kind === 'range'
+          ? `${formatTemp(target.low)}–${formatTemp(target.high)}`
+          : '—';
 
-      this.shadowRoot.querySelector('.target').textContent =
-        this.targetText(state);
-      this.shadowRoot.querySelector('.target-unit').textContent =
-        this.unit();
+      mainIcon.icon = icon;
+      nameEl.textContent = displayName;
+      targetEl.textContent = targetText;
+      targetUnit.textContent = unit;
 
       /* Requested subtext: current temperature only. */
       const current = Number(state.attributes?.current_temperature);
-      const currentEl = this.shadowRoot.querySelector('.current');
       currentEl.textContent = Number.isFinite(current)
-        ? `${this.formatTemp(current)}${this.unit()}`
+        ? `${formatTemp(current)}${unit}`
         : '';
       currentEl.hidden = !currentEl.textContent;
 
-      const adjustable =
-        isAvailable &&
-        this.targetData(state).kind !== 'none';
+      const adjustable = isAvailable && reportedTarget.kind !== 'none';
 
-      this.shadowRoot.querySelector('.temp-down').disabled = !adjustable;
-      this.shadowRoot.querySelector('.temp-up').disabled = !adjustable;
+      tempDown.disabled = !adjustable;
+      tempUp.disabled = !adjustable;
 
       card.setAttribute(
         'aria-label',
-        `${this.name(state,'Thermostat')}: target ${this.targetText(state)}${this.unit()}, current ${currentEl.textContent || 'unavailable'}, ${action}`
+        `${displayName}: target ${targetText}${unit}, current ${currentEl.textContent || 'unavailable'}, ${action}`
       );
     }
 
@@ -1394,7 +1470,14 @@
           <span class="nav-action" aria-hidden="true"><ha-icon icon="${ICONS.navigate}"></ha-icon></span>
         </div>`;
       attachStyles(this.shadowRoot);
-      this.bindCard(this.shadowRoot.querySelector('.card'), () => this.navigate());
+      const card = this.shadowRoot.querySelector('.card');
+      this.bindCard(card, () => this.navigate());
+      this._els = {
+        card,
+        mainIcon:this.shadowRoot.querySelector('.main-icon'),
+        name:this.shadowRoot.querySelector('.name'),
+        subtext:this.shadowRoot.querySelector('.subtext'),
+      };
     }
 
     navigate() {
@@ -1409,15 +1492,15 @@
     }
 
     update() {
-      const card = this.shadowRoot.querySelector('.card');
+      const { card, mainIcon, name:nameEl, subtext:subtextEl } = this._els || {};
       if (!card) return;
       const accent = configuredColor(this.config, 'color', [116,137,255]);
       setAccent(card, accent, accent);
-      this.shadowRoot.querySelector('.main-icon').icon = this.config.icon || ICONS.navigate;
+      mainIcon.icon = this.config.icon || ICONS.navigate;
       const name = this.config.name || 'Navigate';
       const subtext = this.config.subtitle || this.config.subtext || this.config.navigation_path;
-      this.shadowRoot.querySelector('.name').textContent = name;
-      this.shadowRoot.querySelector('.subtext').textContent = subtext;
+      nameEl.textContent = name;
+      subtextEl.textContent = subtext;
       card.setAttribute('aria-label', `${name}: ${subtext}. Opens ${this.config.navigation_path}`);
     }
 
@@ -1432,10 +1515,14 @@
       this.attachShadow({ mode:'open' });
       this._hass = null;
       this._config = null;
+      this._form = null;
       this.kind = 'basic';
     }
 
-    set hass(value) { this._hass = value; this.render(); }
+    set hass(value) {
+      this._hass = value;
+      if (this._form) this._form.hass = value;
+    }
     setConfig(value) { this._config = { ...value }; this.render(); }
 
     schema() {
@@ -1472,10 +1559,11 @@
 
     render() {
       if (!this._config) return;
-      if (!this.shadowRoot.querySelector('ha-form')) {
+      if (!this._form) {
         this.shadowRoot.innerHTML = '<ha-form></ha-form>';
         attachStyles(this.shadowRoot);
-        this.shadowRoot.querySelector('ha-form').addEventListener('value-changed', (event) => {
+        this._form = this.shadowRoot.querySelector('ha-form');
+        this._form.addEventListener('value-changed', (event) => {
           event.stopPropagation();
           const next = { ...this._config, ...event.detail.value };
           for (const key of ['name','friendly_name','subtitle','subtext','icon','icon_on','icon_off','icon_active','icon_inactive','subicon','icon_heating','icon_cooling','icon_idle','unit','battery_entity','active_template','temperature_step','navigation_path','color','active_color','inactive_color','home_color','zone_color','away_color','unknown_color','heating_color','cooling_color','idle_color','off_color']) {
@@ -1487,7 +1575,7 @@
           }));
         });
       }
-      const form = this.shadowRoot.querySelector('ha-form');
+      const form = this._form;
       form.hass = this._hass;
       form.data = Object.fromEntries(Object.entries(this._config).map(([key, value]) =>
         [key, (key === 'color' || key.endsWith('_color')) && Array.isArray(value) ? JSON.stringify(value) : value]
