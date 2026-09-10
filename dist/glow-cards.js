@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '16.1.8';
+  const VERSION = '16.1.16';
   const stylesheetUrl = new URL(`./glow-card.css?v=${VERSION}`, import.meta.url);
   const devRevision = new URL(import.meta.url).searchParams.get('dev');
   if (devRevision) stylesheetUrl.searchParams.set('dev', devRevision);
@@ -1247,6 +1247,7 @@
 
       card.classList.remove('heating','cooling','idle','off');
       card.classList.add(visual);
+      card.classList.toggle('active', visual === 'heating' || visual === 'cooling');
       card.classList.toggle('unavailable', !isAvailable);
 
       const icon =
@@ -1328,7 +1329,7 @@
     render() {
       this.shadowRoot.innerHTML = `
         <link rel="stylesheet" href="${GLOW_CARD_CSS_URL}">
-        <div class="card grid-1-row glow navigation-card">
+        <div class="card grid-1-row glow navigation-card active">
           <div class="icon-shell"><ha-icon class="main-icon"></ha-icon></div>
           <div class="content">
             <div class="name"></div>
