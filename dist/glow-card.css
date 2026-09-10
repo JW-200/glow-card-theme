@@ -1516,9 +1516,9 @@
 }
 
 .card.grid-2-row {
-  height:120px !important;
-  min-height:120px !important;
-  max-height:120px !important;
+  height:124px !important;
+  min-height:124px !important;
+  max-height:124px !important;
   padding:12px 16px !important;
   border-radius:18px !important;
 }
@@ -1601,9 +1601,9 @@
 }
 :host .card.grid-2-row,
 :host .card.grid-2-row:not(.power-only) {
-  height:120px !important;
-  min-height:120px !important;
-  max-height:120px !important;
+  height:124px !important;
+  min-height:124px !important;
+  max-height:124px !important;
 }
 
 /* Preserve the desktop grid while sharing an anchor for compact actions. */
@@ -1697,9 +1697,9 @@
 /* Final responsive layout. These rules intentionally override the older card
    experiments above so resizing does not change a dimmer's structure. */
 :host(:is(reference-brightness-light-card, brightness-light-card)) .card.grid-2-row {
-  height:120px !important;
-  min-height:120px !important;
-  max-height:120px !important;
+  height:124px !important;
+  min-height:124px !important;
+  max-height:124px !important;
   grid-template-columns:52px minmax(0,1fr) !important;
   grid-template-rows:1fr !important;
   column-gap:10px !important;
@@ -1861,33 +1861,30 @@
   }
 }
 
-/* Extend every card 2px past its grid cell on all four sides. */
+/* Extend every card 2px past its grid cell on all four sides and keep the
+   main-icon-to-text gap identical across one-row and two-row layouts. */
 :host .card.grid-1-row:not(.grid-2-row),
 :host .card.grid-2-row {
   width:calc(100% + 4px) !important;
   margin:-2px !important;
+  column-gap:10px !important;
 }
 
-:host .card.grid-2-row {
-  height:124px !important;
-  min-height:124px !important;
-  max-height:124px !important;
-}
-
-/* Narrow grid cells use smaller side insets and slightly more space between
-   the main icon and text. */
+/* Narrow grid cells use smaller side insets. */
 @container (max-width:200px) {
   :host .card.grid-1-row:not(.grid-2-row),
   :host .card.grid-2-row {
     padding-left:4px !important;
     padding-right:4px !important;
   }
+}
 
-  :host .card.grid-1-row:not(.grid-2-row) {
-    column-gap:10px !important;
-  }
+/* Keep the temperature controls aligned toward the card's bottom edge. */
+:host(:is(reference-thermostat-card, thermostat-card)) .card.thermostat-card {
+  padding-bottom:11px !important;
+  align-content:end !important;
+}
 
-  :host .card.grid-2-row {
-    column-gap:12px !important;
-  }
+:host(:is(reference-thermostat-card, thermostat-card)) .thermostat-controls {
+  align-self:end !important;
 }
