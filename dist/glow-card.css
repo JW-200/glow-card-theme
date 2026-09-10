@@ -1470,11 +1470,12 @@
 /* reference-glow-cards-editor */
 :host(reference-glow-cards-editor) { display:block; }
 :host(reference-glow-cards-editor) ha-form { display:block; padding:5px 0; }
-/* Home Assistant Sections grid: 56px rows with an 8px gutter. */
+/* Home Assistant Sections use 56px rows with an 8px gutter. Let one-row cards
+   extend 2px into each edge so they appear larger with a 4px visual gutter. */
 .card.grid-1-row {
-  height:56px !important;
-  min-height:56px !important;
-  max-height:56px !important;
+  height:60px !important;
+  min-height:60px !important;
+  max-height:60px !important;
   grid-template-columns:40px minmax(0,1fr) auto !important;
   grid-template-rows:1fr !important;
   column-gap:10px !important;
@@ -1493,8 +1494,8 @@
   width:20px !important;
   height:20px !important;
 }
-.grid-1-row .name { font-size:14px !important; }
-.grid-1-row .state { margin-top:2px !important; font-size:12px !important; }
+.grid-1-row .name { font-size:16px !important; }
+.grid-1-row .state { margin-top:2px !important; font-size:13px !important; }
 .grid-1-row .subtext { display:none !important; }
 .grid-1-row .switch { --w:48px !important; --h:28px !important; --knob:20px !important; padding:4px !important; }
 .grid-1-row.active .knob { transform:translateX(20px) !important; }
@@ -1532,7 +1533,7 @@
 }
 .grid-2-row .name { font-size:16px !important; }
 .grid-2-row .state { margin-top:3px !important; font-size:13px !important; }
-.grid-2-row .subtext { margin-top:3px !important; font-size:11px !important; }
+.grid-2-row .subtext { margin-top:3px !important; font-size:13px !important; }
 .grid-1-row .portrait,
 .grid-1-row .fallback {
   width:36px !important;
@@ -1557,7 +1558,7 @@
   column-gap:10px !important;
   row-gap:4px !important;
 }
-.grid-2-row .current { margin-top:2px !important; font-size:11px !important; }
+.grid-2-row .current { margin-top:2px !important; font-size:13px !important; }
 .grid-2-row .thermostat-controls {
   width:min(100%,260px) !important;
   grid-template-columns:36px minmax(36px,1fr) 36px !important;
@@ -1569,9 +1570,11 @@
 .grid-2-row .target-unit { font-size:12px !important; }
 /* Keep section dimensions authoritative over legacy narrow-card reflow rules. */
 :host .card.grid-1-row:not(.grid-2-row) {
-  height:56px !important;
-  min-height:56px !important;
-  max-height:56px !important;
+  width:calc(100% + 4px) !important;
+  height:60px !important;
+  min-height:60px !important;
+  max-height:60px !important;
+  margin:-2px !important;
   grid-template-columns:40px minmax(0,1fr) auto !important;
   grid-template-rows:1fr !important;
   column-gap:10px !important;
@@ -1615,7 +1618,7 @@
 :host(:is(reference-navigation-card, navigation-card)) .card.grid-1-row .content .subtext {
   display:block !important;
   margin-top:2px !important;
-  font-size:10px !important;
+  font-size:13px !important;
 }
 
 /* Typical half-section cards (~245px) have room for a trailing action. */
@@ -1759,7 +1762,7 @@
    line and the entity name uses the normal supporting-text treatment. */
 :host(:is(reference-sensor-state-card, sensor-state-card)) .grid-1-row .sensor-label {
   color:#87919d !important;
-  font-size:12px !important;
+  font-size:13px !important;
   font-weight:430 !important;
   line-height:1.1 !important;
 }
@@ -1768,12 +1771,12 @@
   line-height:1.05 !important;
 }
 :host(:is(reference-sensor-state-card, sensor-state-card)) .grid-1-row .reading .value {
-  font-size:14px !important;
+  font-size:16px !important;
   font-weight:760 !important;
   letter-spacing:-.1px !important;
 }
 :host(:is(reference-sensor-state-card, sensor-state-card)) .grid-1-row .reading .unit {
-  font-size:11px !important;
+  font-size:13px !important;
   font-weight:520 !important;
 }
 
