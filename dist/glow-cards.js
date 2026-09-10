@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '16.1.21';
+  const VERSION = '16.1.22';
   const stylesheetUrl = new URL(`./glow-card.css?v=${VERSION}`, import.meta.url);
   const devRevision = new URL(import.meta.url).searchParams.get('dev');
   if (devRevision) stylesheetUrl.searchParams.set('dev', devRevision);
@@ -27,11 +27,24 @@
      * paint-contained and hidden until that sheet is actually attached; in
      * particular, an entity_picture must never paint at its intrinsic size.
      */
+    /* This cap remains after reveal as a last line of defence against a raw
+       entity image ever painting at its intrinsic dimensions. */
+    const imageCap = document.createElement('style');
+    imageCap.dataset.glowImageCap = '';
+    imageCap.textContent = `
+      img, .portrait {
+        max-width:82px !important;
+        max-height:82px !important;
+        object-fit:cover;
+      }
+    `;
+    root.prepend(imageCap);
+
     const guard = document.createElement('style');
     guard.dataset.glowStyleGuard = '';
     guard.textContent = `
       :host { display:block; contain:layout paint; }
-      .card { box-sizing:border-box; width:100%; height:60px; overflow:hidden; visibility:hidden; }
+      .card { box-sizing:border-box; width:100%; height:60px; overflow:hidden; visibility:hidden !important; }
       .card.grid-2-row { height:124px; }
       :is(.avatar,.portrait,.fallback,.icon-shell) {
         width:52px; height:52px; max-width:52px; max-height:52px; overflow:hidden;
