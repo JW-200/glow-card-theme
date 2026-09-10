@@ -1,11 +1,47 @@
 (() => {
   'use strict';
 
-  const VERSION = '16.1.17';
+  const VERSION = '16.1.18';
   const stylesheetUrl = new URL(`./glow-card.css?v=${VERSION}`, import.meta.url);
   const devRevision = new URL(import.meta.url).searchParams.get('dev');
   if (devRevision) stylesheetUrl.searchParams.set('dev', devRevision);
   const GLOW_CARD_CSS_URL = stylesheetUrl.href;
+  const canShareStyles = typeof CSSStyleSheet !== 'undefined' &&
+    typeof CSSStyleSheet.prototype.replace === 'function';
+  const sharedStylesheet = canShareStyles
+    ? fetch(GLOW_CARD_CSS_URL)
+      .then((response) => {
+        if (!response.ok) throw new Error(`Stylesheet request failed: ${response.status}`);
+        return response.text();
+      })
+      .then(async (css) => {
+        const sheet = new CSSStyleSheet();
+        await sheet.replace(css);
+        return sheet;
+      })
+    : null;
+
+  const attachStyles = (root) => {
+    const fallback = () => {
+      if (root.querySelector('link[data-glow-styles]')) return;
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = GLOW_CARD_CSS_URL;
+      link.dataset.glowStyles = '';
+      root.prepend(link);
+    };
+
+    if (!sharedStylesheet || !('adoptedStyleSheets' in root)) {
+      fallback();
+      return;
+    }
+
+    sharedStylesheet.then((sheet) => {
+      if (!root.adoptedStyleSheets.includes(sheet)) {
+        root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
+      }
+    }).catch(fallback);
+  };
   const ACTIVE_STATES = new Set(['on', 'home', 'open', 'playing', 'active', 'true']);
 
   const escapeHtml = (value = '') => String(value).replace(/[&<>"']/g, (char) => ({
@@ -113,8 +149,21 @@
       this._held = false;
     }
 
-    set hass(value) { this._hass = value; this.startTemplates(); this.update(); }
+    set hass(value) {
+      const previous = this._hass;
+      this._hass = value;
+      this.startTemplates();
+      if (this.shouldUpdate(previous, value)) this.update();
+    }
     get hass() { return this._hass; }
+
+    shouldUpdate(previous, next) {
+      if (!previous || previous.connection !== next?.connection || previous.locale !== next?.locale || previous.config !== next?.config) {
+        return true;
+      }
+      const entityIds = [this.config?.entity, this.config?.battery_entity].filter(Boolean);
+      return entityIds.some((entityId) => previous.states?.[entityId] !== next?.states?.[entityId]);
+    }
 
     get config() { return this._config; }
     set config(value) {
@@ -305,7 +354,7 @@
       });
     }
 
-    disconnectedCallback() { clearTimeout(this._holdTimer); this.stopColorTemplates(); }
+    disconnectedCallback() { clearTimeout(this._holdTimer); this.stopTemplates(); }
   }
 
   class ReferenceBasicLightCard extends ReferenceCardBase {
@@ -318,7 +367,6 @@
 
     render() {
       this.shadowRoot.innerHTML = `
-        <link rel="stylesheet" href="${GLOW_CARD_CSS_URL}">
         <div class="card grid-1-row glow light-card">
           <div class="icon-shell"><ha-icon class="main-icon"></ha-icon></div>
           <div class="content">
@@ -329,6 +377,7 @@
             <span class="switch" aria-hidden="true"><span class="knob"></span></span>
           </button>
         </div>`;
+      attachStyles(this.shadowRoot);
 
       const card = this.shadowRoot.querySelector('.card');
       const button = this.shadowRoot.querySelector('button.control');
@@ -379,7 +428,6 @@
 
     render() {
       this.shadowRoot.innerHTML = `
-        <link rel="stylesheet" href="${GLOW_CARD_CSS_URL}">
 
         <div class="card grid-2-row glow light-card">
           <div class="icon-shell">
@@ -407,6 +455,7 @@
             <div class="percent">0%</div>
           </div>
         </div>`;
+      attachStyles(this.shadowRoot);
 
       const card = this.shadowRoot.querySelector('.card');
       const slider = this.shadowRoot.querySelector('input[type=range]');
@@ -679,7 +728,6 @@
 
     render() {
       this.shadowRoot.innerHTML = `
-        <link rel="stylesheet" href="${GLOW_CARD_CSS_URL}">
         <div class="card grid-1-row glow">
           <div class="avatar"></div>
           <div class="content">
@@ -690,6 +738,7 @@
             <ha-icon class="battery-icon" icon="${ICONS.battery}"></ha-icon>
           </button>
         </div>`;
+      attachStyles(this.shadowRoot);
 
       this.bindCard(this.shadowRoot.querySelector('.card'), () => moreInfo(this, this.config.entity));
       this.shadowRoot.querySelector('.battery-status').addEventListener('click', (event) => {
@@ -776,7 +825,6 @@
 
     render() {
       this.shadowRoot.innerHTML = `
-        <link rel="stylesheet" href="${GLOW_CARD_CSS_URL}">
 
         <div class="card grid-1-row glow sensor-card">
           <div class="icon-shell"><ha-icon class="main-icon"></ha-icon></div>
@@ -791,6 +839,7 @@
             <ha-icon icon="${ICONS.info}"></ha-icon>
           </button>
         </div>`;
+      attachStyles(this.shadowRoot);
 
       this.bindCard(this.shadowRoot.querySelector('.card'), () => moreInfo(this, this.config.entity));
       this.shadowRoot.querySelector('.info-button').addEventListener('click', (event) => {
@@ -895,7 +944,6 @@
 
     render() {
       this.shadowRoot.innerHTML = `
-        <link rel="stylesheet" href="${GLOW_CARD_CSS_URL}">
 
         <div class="card grid-2-row thermostat-card idle">
           <div class="icon-shell">
@@ -930,6 +978,7 @@
             </button>
           </div>
         </div>`;
+      attachStyles(this.shadowRoot);
 
       const card = this.shadowRoot.querySelector('.card');
       this.bindCard(card, () => moreInfo(this, this.config.entity));
@@ -1336,7 +1385,6 @@
 
     render() {
       this.shadowRoot.innerHTML = `
-        <link rel="stylesheet" href="${GLOW_CARD_CSS_URL}">
         <div class="card grid-1-row glow navigation-card active">
           <div class="icon-shell"><ha-icon class="main-icon"></ha-icon></div>
           <div class="content">
@@ -1345,6 +1393,7 @@
           </div>
           <span class="nav-action" aria-hidden="true"><ha-icon icon="${ICONS.navigate}"></ha-icon></span>
         </div>`;
+      attachStyles(this.shadowRoot);
       this.bindCard(this.shadowRoot.querySelector('.card'), () => this.navigate());
     }
 
@@ -1424,7 +1473,8 @@
     render() {
       if (!this._config) return;
       if (!this.shadowRoot.querySelector('ha-form')) {
-        this.shadowRoot.innerHTML = `<link rel="stylesheet" href="${GLOW_CARD_CSS_URL}"><ha-form></ha-form>`;
+        this.shadowRoot.innerHTML = '<ha-form></ha-form>';
+        attachStyles(this.shadowRoot);
         this.shadowRoot.querySelector('ha-form').addEventListener('value-changed', (event) => {
           event.stopPropagation();
           const next = { ...this._config, ...event.detail.value };
