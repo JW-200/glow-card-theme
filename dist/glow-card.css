@@ -1801,6 +1801,14 @@
   margin-top:0 !important;
   margin-bottom:0 !important;
 }
+
+/* Leave a small glyph-safe area below clipped single-line text. Some HA font
+   stacks paint descenders just outside the line box; the negative margin keeps
+   the measured layout and inter-line gap unchanged. */
+:host .card :is(.name, .state, .subtext, .sensor-label, .current, .value, .unit, .target, .target-unit) {
+  padding-bottom:1px;
+  margin-bottom:-1px !important;
+}
 :host(:is(reference-navigation-card, navigation-card)) .card.navigation-card .content > .subtext {
   margin-top:0 !important;
 }
