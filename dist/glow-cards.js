@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '16.1.22';
+  const VERSION = typeof __GLOW_VERSION__ === 'string' ? __GLOW_VERSION__ : '16.1.22';
   const stylesheetUrl = new URL(`./glow-card.css?v=${VERSION}`, import.meta.url);
   const devRevision = new URL(import.meta.url).searchParams.get('dev');
   if (devRevision) stylesheetUrl.searchParams.set('dev', devRevision);

@@ -1,5 +1,6 @@
 {
   "name": "Glow Cards",
-  "filename": "glow-cards.js",
-  "content_in_root": false
+  "filename": "glow-cards.zip",
+  "zip_release": true,
+  "hide_default_branch": true
 }

@@ -1,0 +1,14 @@
+{
+  "name": "glow-cards",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --check dist/glow-cards.js && node --experimental-vm-modules --test dev/live-reload.test.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "lightningcss": "1.33.0"
+  }
+}

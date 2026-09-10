@@ -10,3 +10,8 @@ dev/config/image/
 dev/config/tts/
 
 dev/config
+
+# Generated release files
+.release/
+glow-cards.zip
+node_modules/
