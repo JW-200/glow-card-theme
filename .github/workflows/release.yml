@@ -32,14 +32,7 @@ jobs:
         env:
           GLOW_VERSION: ${{ github.ref_name }}
 
-      - name: Package HACS release
-        working-directory: .release
-        run: zip -9 ../glow-cards.zip glow-cards.js glow-card.css
-
-      - name: Verify release archive
-        run: unzip -l glow-cards.zip
-
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${{ github.ref_name }}" glow-cards.zip --verify-tag --generate-notes --title "Glow Cards ${{ github.ref_name }}"
+        run: gh release create "${{ github.ref_name }}" .release/glow-cards.js .release/glow-card.css --verify-tag --generate-notes --title "Glow Cards ${{ github.ref_name }}"
