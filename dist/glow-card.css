@@ -249,19 +249,6 @@
       font-weight:430;
     }
 
-    .chevron {
-      position:relative;
-      z-index:3;
-      display:grid;
-      place-items:center;
-      width:30px;
-      height:38px;
-      color:#dbe0e8;
-      opacity:.88;
-      filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));
-    }
-    .chevron ha-icon { --mdc-icon-size:31px; }
-
     button.control {
       position:relative;
       z-index:6;
@@ -419,122 +406,7 @@
       box-shadow:inset 0 1px 0 rgba(255,255,255,.82),0 3px 8px rgba(0,0,0,.48);
     }
 
-    @container (max-width:430px) {
-      .card {
-        height:94px;
-        min-height:94px;
-        max-height:94px;
-        grid-template-columns:50px minmax(0,1fr) auto;
-        column-gap:10px;
-        padding:9px 12px;
-        border-radius:17px;
-      }
-      .icon-shell { width:44px; height:44px; justify-self:center; }
-      .icon-shell ha-icon { --mdc-icon-size:23px; width:23px; height:23px; }
-      .name { font-size:14.5px; letter-spacing:-.10px; }
-      .state { margin-top:3px; font-size:11.5px; }
-      .subtext { margin-top:3px; font-size:10.5px; }
-      .chevron { width:18px; height:24px; }
-      .chevron ha-icon { --mdc-icon-size:21px; }
-      .switch { --w:54px; --h:28px; --knob:20px; padding:4px; }
-      .active .knob { transform:translateX(26px); }
-    }
-
-    /* Keep the phone layout single-line until the card is truly cramped. */
-    @container (max-width:160px) {
-      .card { column-gap:8px; padding-inline:9px; }
-      .name,.state,.subtext {
-        white-space:nowrap;
-        overflow:visible;
-        text-overflow:ellipsis;
-        overflow-wrap:normal;
-      }
-      .name { line-height:1.12; }
-      .state,.subtext { line-height:1.2; }
-    }
-
-    @container (max-width:150px) {
-      .card {
-        grid-template-columns:50px minmax(0,1fr);
-        align-items:center;
-        row-gap:10px;
-        padding:12px;
-      }
-      .icon-shell { width:46px; height:46px; }
-      .icon-shell ha-icon { --mdc-icon-size:24px; width:24px; height:24px; }
-      .name { font-size:14px; }
-      .state { font-size:12px; }
-      .subtext { font-size:10.5px; }
-    }
-
-
-    /*
-     * REAL PHONE RESPONSIVE MODE
-     *
-     * This is viewport-gated, so desktop cards retain the compact desktop
-     * design even if an individual desktop card happens to be narrow.
-     */
-    @media (max-width:600px) {
-      .card:not(.thermostat-card) {
-        height:112px !important;
-        min-height:112px !important;
-        max-height:112px !important;
-        align-content:center;
-      }
-
-      .card:not(.thermostat-card) .name {
-        white-space:nowrap !important;
-        overflow:hidden !important;
-        text-overflow:ellipsis !important;
-        overflow-wrap:normal;
-        display:block !important;
-        -webkit-box-orient:vertical;
-        -webkit-line-clamp:2;
-        line-clamp:2;
-        line-height:1.12;
-      }
-
-      .card:not(.thermostat-card) .state {
-        white-space:nowrap !important;
-        overflow:hidden !important;
-        text-overflow:ellipsis !important;
-        overflow-wrap:normal;
-        display:block !important;
-        -webkit-box-orient:vertical;
-        -webkit-line-clamp:1;
-        line-clamp:1;
-        line-height:1.16;
-      }
-
-      .card:not(.thermostat-card) .subtext,
-      .card:not(.thermostat-card) .sensor-label {
-        white-space:nowrap !important;
-        overflow:hidden !important;
-        text-overflow:ellipsis !important;
-        overflow-wrap:normal;
-        display:block !important;
-        -webkit-box-orient:vertical;
-        -webkit-line-clamp:2;
-        line-clamp:2;
-        line-height:1.15;
-      }
-
-      /*
-       * On a phone, two-column cards are often only ~150-220px wide.
-       * Give those cards a second control row instead of squeezing text into
-       * a few pixels. This is intentionally BOTH viewport- and container-
-       * gated, so the same narrow width on desktop does not trigger it.
-       */
-      @container (max-width:260px) {
-        .card:not(.thermostat-card) {
-          height:128px !important;
-          min-height:128px !important;
-          max-height:128px !important;
-        }
-      }
-    }
-
-    @media (prefers-reduced-motion:reduce) {
+@media (prefers-reduced-motion:reduce) {
       *,*::before,*::after { transition:none!important; animation:none!important; }
       .card:hover,.card:active { transform:none!important; }
     }
@@ -549,34 +421,6 @@
               radial-gradient(90% 130% at 108% -6%,rgba(103,133,190,.10),transparent 49%),
               linear-gradient(133deg,#2a2b2c 0%,#20252b 48%,#131a22 100%);
           }
-          @container (max-width:150px) {
-            :host(:is(reference-basic-light-card, basic-light-card)) button.control { grid-column:1 / -1; justify-self:end; }
-          }
-        
-          @media (max-width:600px) {
-            @container (max-width:260px) {
-              :host(:is(reference-basic-light-card, basic-light-card)) .card {
-                grid-template-columns:50px minmax(0,1fr) !important;
-                grid-template-rows:1fr auto !important;
-                row-gap:7px;
-                padding:10px 12px !important;
-              }
-
-              :host(:is(reference-basic-light-card, basic-light-card)) button.control {
-                grid-column:1 / -1 !important;
-                grid-row:2 !important;
-                justify-self:end;
-                align-self:end;
-              }
-
-              :host(:is(reference-basic-light-card, basic-light-card)) .content {
-                grid-column:2;
-                grid-row:1;
-                min-width:0;
-              }
-            }
-          }
-
 /* reference-brightness-light-card */
 /*
            * v19: same visual height as the other non-thermostat cards.
@@ -1131,192 +975,6 @@
               transform:translateX(-50%);
             }
 
-            /*
-             * Non-dimmable fallback stays the same compact height as a
-             * standard light card because it has no slider row.
-             */
-            :host(:is(reference-brightness-light-card, brightness-light-card)) .power-only {
-              height:94px;
-              min-height:94px;
-              max-height:94px;
-              grid-template-columns:50px minmax(0,1fr) auto;
-              grid-template-rows:1fr;
-              column-gap:10px;
-              padding:9px 12px;
-            }
-
-            :host(:is(reference-brightness-light-card, brightness-light-card)) .power-only .icon-shell {
-              grid-column:1;
-              grid-row:1;
-              width:44px;
-              height:44px;
-            }
-
-            :host(:is(reference-brightness-light-card, brightness-light-card)) .power-only .content {
-              grid-column:2;
-              grid-row:1;
-              align-self:center;
-              padding-bottom:0;
-            }
-
-            :host(:is(reference-brightness-light-card, brightness-light-card)) .power-only .power-toggle {
-              display:block;
-              position:static;
-              grid-column:3;
-              grid-row:1;
-              align-self:center;
-            }
-          }
-
-          /*
-           * Only reflow controls once the card is genuinely too narrow.
-           * Normal phone widths keep the compact 78px layout.
-           */
-          @container (max-width:150px) {
-            /*
-             * At very narrow widths the slider may use the whole lower row
-             * so it remains practical to drag. The card gains only a few
-             * pixels instead of collapsing the slider.
-             */
-            :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) {
-              height:94px;
-              min-height:94px;
-              max-height:94px;
-              padding-bottom:27px;
-            }
-
-            :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) .slider-row {
-              left:8px;
-              right:8px;
-              bottom:7px;
-            }
-
-            :host(reference-brightness-light-card) .card:not(.power-only) .name,
-:host(reference-brightness-light-card) .card:not(.power-only) .state,
-:host(reference-brightness-light-card) .card:not(.power-only) .subtext,
-:host(brightness-light-card) .card:not(.power-only) .name,
-:host(brightness-light-card) .card:not(.power-only) .state,
-:host(brightness-light-card) .card:not(.power-only) .subtext {
-              white-space:nowrap;
-              overflow:hidden;
-              text-overflow:ellipsis;
-            }
-
-            :host(:is(reference-brightness-light-card, brightness-light-card)) .power-only {
-              height:94px;
-              min-height:94px;
-              max-height:94px;
-              grid-template-columns:44px minmax(0,1fr) auto;
-              grid-template-rows:1fr;
-              column-gap:6px;
-              padding:8px;
-            }
-
-            :host(:is(reference-brightness-light-card, brightness-light-card)) .power-only .power-toggle {
-              grid-column:3;
-              grid-row:1;
-              justify-self:end;
-            }
-
-            :host(reference-brightness-light-card) .power-only .name,
-:host(reference-brightness-light-card) .power-only .state,
-:host(reference-brightness-light-card) .power-only .subtext,
-:host(brightness-light-card) .power-only .name,
-:host(brightness-light-card) .power-only .state,
-:host(brightness-light-card) .power-only .subtext {
-              white-space:nowrap;
-              overflow:hidden;
-              text-overflow:ellipsis;
-            }
-          }
-        
-          @media (max-width:600px) {
-            :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) {
-              padding-bottom:31px;
-            }
-
-            :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) .content .name {
-              white-space:nowrap !important;
-              overflow:hidden !important;
-              text-overflow:ellipsis !important;
-              overflow-wrap:normal;
-              display:block !important;
-              -webkit-box-orient:vertical;
-              -webkit-line-clamp:2;
-              line-clamp:2;
-            }
-
-            :host(reference-brightness-light-card) .card:not(.power-only) .content .state,
-:host(reference-brightness-light-card) .card:not(.power-only) .content .subtext,
-:host(brightness-light-card) .card:not(.power-only) .content .state,
-:host(brightness-light-card) .card:not(.power-only) .content .subtext {
-              white-space:nowrap !important;
-              overflow:hidden !important;
-              text-overflow:ellipsis !important;
-            }
-
-            :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) .content .subtext {
-              display:block;
-              -webkit-box-orient:vertical;
-              -webkit-line-clamp:1;
-              line-clamp:1;
-            }
-
-            /* Keep the full-width slider across the phone card. */
-            :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) .slider-row {
-              left:12px;
-              right:12px;
-              bottom:8px;
-            }
-          }
-
-        
-          @media (max-width:600px) {
-            :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) {
-              height:112px !important;
-              min-height:112px !important;
-              max-height:112px !important;
-              padding-bottom:31px !important;
-            }
-
-            :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) .content .name {
-              white-space:nowrap !important;
-              overflow:hidden !important;
-              text-overflow:ellipsis !important;
-              overflow-wrap:normal;
-              display:block !important;
-              -webkit-box-orient:vertical;
-              -webkit-line-clamp:2;
-              line-clamp:2;
-            }
-
-            /* Slider uses the full inner width of the card. */
-            :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) .slider-row {
-              left:12px !important;
-              right:12px !important;
-              bottom:8px !important;
-              width:auto !important;
-            }
-
-            @container (max-width:260px) {
-              :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) {
-                height:128px !important;
-                min-height:128px !important;
-                max-height:128px !important;
-                padding-bottom:33px !important;
-              }
-
-              :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) {
-                grid-template-columns:50px minmax(0,1fr) !important;
-                grid-template-rows:1fr !important;
-              }
-
-              :host(:is(reference-brightness-light-card, brightness-light-card)) .card:not(.power-only) .slider-row {
-                left:10px !important;
-                right:10px !important;
-                bottom:9px !important;
-              }
-            }
           }
 
 /* reference-person-picture-card */
@@ -1475,61 +1133,6 @@
           }
           :host(:is(reference-person-picture-card, person-picture-card)) .battery-status[hidden] { display:none !important; }
 
-          @container (max-width:430px) {
-            :host(:is(reference-person-picture-card, person-picture-card)) .card { grid-template-columns:50px minmax(0,1fr) auto; height:94px; min-height:94px; max-height:94px; }
-            :host(:is(reference-person-picture-card, person-picture-card)) .avatar { width:46px; height:46px; }
-            :host(reference-person-picture-card) .portrait,
-:host(reference-person-picture-card) .fallback,
-:host(person-picture-card) .portrait,
-:host(person-picture-card) .fallback { width:42px; height:42px; }
-            :host(:is(reference-person-picture-card, person-picture-card)) .badge { width:19px; height:19px; border-width:1.5px; }
-            :host(:is(reference-person-picture-card, person-picture-card)) .badge ha-icon { --mdc-icon-size:10px; width:10px; height:10px; }
-            :host(:is(reference-person-picture-card, person-picture-card)) .battery-status { width:25px; height:25px; min-width:25px; }
-            :host(:is(reference-person-picture-card, person-picture-card)) .battery-status ha-icon { --mdc-icon-size:20px; width:20px; height:20px; }
-          }
-          @container (max-width:150px) {
-            :host(:is(reference-person-picture-card, person-picture-card)) .card { grid-template-columns:58px minmax(0,1fr); row-gap:8px; }
-            :host(:is(reference-person-picture-card, person-picture-card)) .battery-status { grid-column:1/-1; justify-self:end; }
-          }
-          @container (max-width:140px) {
-            :host(:is(reference-person-picture-card, person-picture-card)) .card { grid-template-columns:50px minmax(0,1fr); }
-            :host(:is(reference-person-picture-card, person-picture-card)) .avatar { width:48px; height:48px; }
-            :host(reference-person-picture-card) .portrait,
-:host(reference-person-picture-card) .fallback,
-:host(person-picture-card) .portrait,
-:host(person-picture-card) .fallback { width:44px; height:44px; }
-          }
-        
-          @media (max-width:600px) {
-            @container (max-width:260px) {
-              :host(:is(reference-person-picture-card, person-picture-card)) .card {
-                grid-template-columns:50px minmax(0,1fr) !important;
-                grid-template-rows:1fr auto !important;
-                row-gap:6px;
-                padding:10px 12px !important;
-              }
-
-              :host(:is(reference-person-picture-card, person-picture-card)) .avatar {
-                grid-column:1;
-                grid-row:1;
-                align-self:center;
-              }
-
-              :host(:is(reference-person-picture-card, person-picture-card)) .content {
-                grid-column:2;
-                grid-row:1;
-                min-width:0;
-              }
-
-              :host(:is(reference-person-picture-card, person-picture-card)) .battery-status {
-                grid-column:1 / -1 !important;
-                grid-row:2 !important;
-                justify-self:end;
-                align-self:end;
-              }
-            }
-          }
-
 /* reference-sensor-state-card */
 :host(:is(reference-sensor-state-card, sensor-state-card)) .card {
             --accent-rgb:56,169,255;
@@ -1670,75 +1273,6 @@
           }
           :host(:is(reference-sensor-state-card, sensor-state-card)) .sensor-card.active .info-button {
             color:rgb(var(--accent-rgb)) !important;
-          }
-
-          @container (max-width:430px) {
-            :host(:is(reference-sensor-state-card, sensor-state-card)) .card {
-              grid-template-columns:50px minmax(0,1fr) auto;
-              height:94px;
-              min-height:94px;
-              max-height:94px;
-            }
-            :host(:is(reference-sensor-state-card, sensor-state-card)) .sensor-label { font-size:10.5px; }
-            :host(:is(reference-sensor-state-card, sensor-state-card)) .reading { margin-top:3px; gap:4px; }
-            :host(:is(reference-sensor-state-card, sensor-state-card)) .value { font-size:25px; letter-spacing:-.55px; }
-            :host(:is(reference-sensor-state-card, sensor-state-card)) .unit { font-size:12px; }
-            :host(:is(reference-sensor-state-card, sensor-state-card)) .info-button {
-              width:25px;
-              height:25px;
-              min-width:25px;
-            }
-            :host(:is(reference-sensor-state-card, sensor-state-card)) .info-button ha-icon {
-              --mdc-icon-size:19px;
-              width:19px;
-              height:19px;
-            }
-          }
-          @container (max-width:150px) {
-            :host(:is(reference-sensor-state-card, sensor-state-card)) .card { grid-template-columns:50px minmax(0,1fr); }
-            :host(:is(reference-sensor-state-card, sensor-state-card)) .info-button {
-              grid-column:1/-1;
-              justify-self:end;
-            }
-          }
-        
-          @media (max-width:600px) {
-            :host(:is(reference-sensor-state-card, sensor-state-card)) .sensor-label {
-              white-space:nowrap;
-              overflow:hidden;
-              overflow-wrap:normal;
-              display:block;
-              -webkit-box-orient:vertical;
-              -webkit-line-clamp:2;
-              line-clamp:2;
-            }
-
-            @container (max-width:260px) {
-              :host(:is(reference-sensor-state-card, sensor-state-card)) .card {
-                grid-template-columns:50px minmax(0,1fr) !important;
-                grid-template-rows:1fr auto !important;
-                row-gap:5px;
-                padding:10px 12px !important;
-              }
-
-              :host(:is(reference-sensor-state-card, sensor-state-card)) .icon-shell {
-                grid-column:1;
-                grid-row:1;
-              }
-
-              :host(:is(reference-sensor-state-card, sensor-state-card)) .content {
-                grid-column:2;
-                grid-row:1;
-                min-width:0;
-              }
-
-              :host(:is(reference-sensor-state-card, sensor-state-card)) .info-button {
-                grid-column:1 / -1 !important;
-                grid-row:2 !important;
-                justify-self:end;
-                align-self:end;
-              }
-            }
           }
 
 /* reference-thermostat-card */
@@ -1899,61 +1433,6 @@
            */
           :host(:is(reference-thermostat-card, thermostat-card)) .temp-button:disabled { opacity:.34; }
 
-          @container (max-width:430px) {
-            :host(:is(reference-thermostat-card, thermostat-card)) .thermostat-card {
-              height:auto;
-              min-height:118px;
-              max-height:none;
-              grid-template-columns:50px minmax(0,1fr);
-              grid-template-rows:auto auto;
-              row-gap:7px;
-              padding-block:10px;
-            }
-
-            :host(:is(reference-thermostat-card, thermostat-card)) .current {
-              margin-top:3px;
-              font-size:10.5px;
-            }
-
-            :host(:is(reference-thermostat-card, thermostat-card)) .thermostat-controls {
-              width:min(100%,230px);
-              grid-template-columns:30px minmax(72px,1fr) 30px;
-              gap:7px;
-            }
-
-            :host(:is(reference-thermostat-card, thermostat-card)) .target-display {
-              padding:5px 8px;
-              border-radius:8px;
-            }
-
-            :host(:is(reference-thermostat-card, thermostat-card)) .target {
-              font-size:18px;
-              letter-spacing:-.35px;
-            }
-
-            :host(:is(reference-thermostat-card, thermostat-card)) .target-unit { font-size:10px; }
-
-            :host(:is(reference-thermostat-card, thermostat-card)) .temp-button {
-              width:30px;
-              height:30px;
-            }
-
-            :host(:is(reference-thermostat-card, thermostat-card)) .temp-button ha-icon {
-              --mdc-icon-size:16px;
-              width:16px;
-              height:16px;
-            }
-          }
-
-          @container (max-width:210px) {
-            :host(:is(reference-thermostat-card, thermostat-card)) .thermostat-controls {
-              width:100%;
-              grid-template-columns:28px minmax(58px,1fr) 28px;
-              gap:5px;
-            }
-            :host(:is(reference-thermostat-card, thermostat-card)) .target { font-size:16px; }
-          }
-
 /* reference-navigation-card */
 :host(:is(reference-navigation-card, navigation-card)) .navigation-card {
             --accent-rgb:116,137,255;
@@ -1988,52 +1467,6 @@
           :host(:is(reference-navigation-card, navigation-card)) .nav-action ha-icon { --mdc-icon-size:23px; width:23px; height:23px; }
           :host(:is(reference-navigation-card, navigation-card)) .navigation-card:active .nav-action { transform:translateX(3px); }
           @media (hover:hover) { :host(:is(reference-navigation-card, navigation-card)) .navigation-card:hover .nav-action { transform:translateX(3px); box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 0 16px rgba(var(--accent-rgb),.20),0 4px 10px rgba(0,0,0,.25); } }
-          @container (max-width:430px) {
-            :host(:is(reference-navigation-card, navigation-card)) .navigation-card { height:94px; min-height:94px; max-height:94px; grid-template-columns:50px minmax(0,1fr) auto; }
-            :host(:is(reference-navigation-card, navigation-card)) .navigation-card .subtext { margin-top:3px; font-size:10.5px; }
-            :host(:is(reference-navigation-card, navigation-card)) .nav-action { width:28px; height:28px; }
-            :host(:is(reference-navigation-card, navigation-card)) .nav-action ha-icon { --mdc-icon-size:17px; width:17px; height:17px; }
-          }
-          @container (max-width:150px) {
-            :host(:is(reference-navigation-card, navigation-card)) .navigation-card { grid-template-columns:50px minmax(0,1fr); }
-            :host(:is(reference-navigation-card, navigation-card)) .nav-action { grid-column:1/-1; justify-self:end; }
-          }
-        
-          @media (max-width:600px) {
-            :host(:is(reference-navigation-card, navigation-card)) .navigation-card .subtext {
-              white-space:nowrap !important;
-              overflow:hidden !important;
-              text-overflow:ellipsis !important;
-              overflow-wrap:normal;
-              display:block !important;
-              -webkit-box-orient:vertical;
-              -webkit-line-clamp:2;
-              line-clamp:2;
-            }
-
-            @container (max-width:260px) {
-              :host(:is(reference-navigation-card, navigation-card)) .navigation-card {
-                grid-template-columns:50px minmax(0,1fr) !important;
-                grid-template-rows:1fr auto !important;
-                row-gap:6px;
-                padding:10px 12px !important;
-              }
-
-              :host(:is(reference-navigation-card, navigation-card)) .navigation-card .content {
-                grid-column:2;
-                grid-row:1;
-                min-width:0;
-              }
-
-              :host(:is(reference-navigation-card, navigation-card)) .nav-action {
-                grid-column:1 / -1 !important;
-                grid-row:2 !important;
-                justify-self:end;
-                align-self:end;
-              }
-            }
-          }
-
 /* reference-glow-cards-editor */
 :host(reference-glow-cards-editor) { display:block; }
 :host(reference-glow-cards-editor) ha-form { display:block; padding:5px 0; }
@@ -2070,8 +1503,16 @@
 .grid-1-row .reading .value { font-size:21px !important; }
 .grid-1-row .reading .unit { font-size:12px !important; }
 .grid-1-row .battery-status { font-size:11px !important; }
-.grid-1-row .info-button,
-.grid-1-row .nav-action { width:28px !important; height:28px !important; }
+.grid-1-row :is(.battery-status, .info-button, .nav-action) {
+  width:28px !important;
+  height:28px !important;
+  min-width:28px !important;
+}
+.grid-1-row :is(.battery-status, .info-button, .nav-action) > ha-icon {
+  --mdc-icon-size:17px !important;
+  width:17px !important;
+  height:17px !important;
+}
 
 .card.grid-2-row {
   height:120px !important;
@@ -2119,11 +1560,11 @@
 .grid-2-row .current { margin-top:2px !important; font-size:11px !important; }
 .grid-2-row .thermostat-controls {
   width:min(100%,260px) !important;
-  grid-template-columns:36px minmax(56px,1fr) 36px !important;
+  grid-template-columns:36px minmax(36px,1fr) 36px !important;
   gap:3px !important;
 }
 .grid-2-row .temp-button { width:36px !important; height:36px !important; }
-.grid-2-row .target-display { height:36px !important; box-sizing:border-box !important; align-items:center !important; gap:3px !important; padding:6px 4px !important; border-radius:11px !important; }
+.grid-2-row .target-display { height:36px !important; box-sizing:border-box !important; align-items:center !important; gap:3px !important; padding:6px 4px !important; overflow:hidden !important; border-radius:11px !important; }
 .grid-2-row .target { font-size:20px !important; }
 .grid-2-row .target-unit { font-size:12px !important; }
 /* Keep section dimensions authoritative over legacy narrow-card reflow rules. */
@@ -2198,13 +1639,6 @@
     grid-template-columns:52px minmax(0,1fr) 48px !important;
     column-gap:10px !important;
   }
-  :host .card.grid-2-row .icon-control > .power-toggle .switch {
-    --w:48px;
-    --h:28px;
-    --knob:20px;
-    padding:4px;
-  }
-  :host .card.grid-2-row.active .power-toggle .knob { transform:translateX(20px) !important; }
 }
 
 @container (max-width:200px) {

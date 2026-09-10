@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '16.1.0';
+  const VERSION = '16.1.1';
   const stylesheetUrl = new URL(`./glow-card.css?v=${VERSION}`, import.meta.url);
   const devRevision = new URL(import.meta.url).searchParams.get('dev');
   if (devRevision) stylesheetUrl.searchParams.set('dev', devRevision);
@@ -124,14 +124,11 @@
       this._colorTemplates = [];
       this._activeTemplateResult = undefined;
       this._activeTemplateError = false;
-      for (const [key, field] of Object.entries(value || {})) {
-        const entries = (key === 'color' || key.endsWith('_color')) ? [[[key], field]] : [];
-        for (const [path, color] of entries) {
-          if (typeof color !== 'string' || !/\{[{%#]/.test(color)) continue;
-          this._colorTemplates.push({ path, template:color });
-          const target = path.length === 2 ? this._config[path[0]] : this._config;
-          delete target[path.at(-1)];
-        }
+      for (const [field, color] of Object.entries(value || {})) {
+        if (field !== 'color' && !field.endsWith('_color')) continue;
+        if (typeof color !== 'string' || !/\{[{%#]/.test(color)) continue;
+        this._colorTemplates.push({ field, template:color });
+        delete this._config[field];
       }
       if (typeof value?.active_template === 'string' && value.active_template.trim()) {
         this._colorTemplates.push({ kind:'active', template:value.active_template });
@@ -156,7 +153,7 @@
       this.stopColorTemplates();
       this._templateConnection = connection;
       const generation = this._templateGeneration;
-      for (const { kind = 'color', path, template } of this._colorTemplates) {
+      for (const { kind = 'color', field, template } of this._colorTemplates) {
         const apply = (message) => {
           if (generation !== this._templateGeneration) return;
           if (kind === 'active') {
@@ -166,12 +163,11 @@
             this.update();
             return;
           }
-          const target = path.length === 2 ? this._config[path[0]] : this._config;
           if (message.error) {
-            delete target[path.at(-1)];
-            notify(this, `Color template (${path.join('.')}): ${message.error}`);
+            delete this._config[field];
+            notify(this, `Color template (${field}): ${message.error}`);
           } else {
-            target[path.at(-1)] = message.result;
+            this._config[field] = message.result;
           }
           this.update();
         };
