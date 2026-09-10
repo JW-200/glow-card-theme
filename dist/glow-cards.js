@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '16.1.20';
+  const VERSION = '16.1.21';
   const stylesheetUrl = new URL(`./glow-card.css?v=${VERSION}`, import.meta.url);
   const devRevision = new URL(import.meta.url).searchParams.get('dev');
   if (devRevision) stylesheetUrl.searchParams.set('dev', devRevision);
@@ -22,13 +22,37 @@
     : null;
 
   const attachStyles = (root) => {
+    /*
+     * The shared sheet is loaded asynchronously. Keep the unstyled subtree
+     * paint-contained and hidden until that sheet is actually attached; in
+     * particular, an entity_picture must never paint at its intrinsic size.
+     */
+    const guard = document.createElement('style');
+    guard.dataset.glowStyleGuard = '';
+    guard.textContent = `
+      :host { display:block; contain:layout paint; }
+      .card { box-sizing:border-box; width:100%; height:60px; overflow:hidden; visibility:hidden; }
+      .card.grid-2-row { height:124px; }
+      :is(.avatar,.portrait,.fallback,.icon-shell) {
+        width:52px; height:52px; max-width:52px; max-height:52px; overflow:hidden;
+      }
+      .portrait { display:block; object-fit:cover; }
+    `;
+    root.prepend(guard);
+    const reveal = () => guard.remove();
+
     const fallback = () => {
-      if (root.querySelector('link[data-glow-styles]')) return;
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = GLOW_CARD_CSS_URL;
-      link.dataset.glowStyles = '';
-      root.prepend(link);
+      let link = root.querySelector('link[data-glow-styles]');
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = GLOW_CARD_CSS_URL;
+        link.dataset.glowStyles = '';
+        root.prepend(link);
+      }
+      link.addEventListener('load', reveal, { once:true });
+      link.addEventListener('error', reveal, { once:true });
+      if (link.sheet) reveal();
     };
 
     if (!sharedStylesheet || !('adoptedStyleSheets' in root)) {
@@ -40,6 +64,7 @@
       if (!root.adoptedStyleSheets.includes(sheet)) {
         root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
       }
+      reveal();
     }).catch(fallback);
   };
   const ACTIVE_STATES = new Set(['on', 'home', 'open', 'playing', 'active', 'true']);
