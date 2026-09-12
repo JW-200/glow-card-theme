@@ -122,17 +122,33 @@
     }
     return rgbTriplet(fallback, [255,190,57]);
   };
-  const configuredColor = (config, field, fallback) => rgbTriplet(config?.[field], fallback);
+  const configuredColor = (config, field, fallback) => {
+    if (config?.[field] == null && typeof fallback === 'string' && fallback.includes('var(')) return fallback;
+    if (typeof config?.[field] === 'string' && config[field].includes('var(')) return config[field];
+    return rgbTriplet(config?.[field], fallback);
+  };
   // HA publishes normalized rgb_color for its supported color modes.
   const lightColor = (state) => state?.attributes?.rgb_color ?? [255,190,57];
   const accentCache = new WeakMap();
   const setAccent = (card, rgb, rgb2 = rgb) => {
     if (!card) return;
-    const next = `${String(rgb)}|${String(rgb2)}`;
+    const resolve = (value) => {
+      if (typeof value !== 'string' || !value.includes('var(')) return String(value);
+      const probe = document.createElement('span');
+      probe.style.color = value;
+      card.append(probe);
+      const resolved = getComputedStyle(probe).color;
+      probe.remove();
+      const match = resolved.match(/\d+/g);
+      return match?.length >= 3 ? match.slice(0, 3).join(',') : String(value);
+    };
+    const resolvedRgb = resolve(rgb);
+    const resolvedRgb2 = resolve(rgb2);
+    const next = `${resolvedRgb}|${resolvedRgb2}`;
     if (accentCache.get(card) === next) return;
     accentCache.set(card, next);
-    card.style.setProperty('--accent-rgb', String(rgb));
-    card.style.setProperty('--accent2-rgb', String(rgb2));
+    card.style.setProperty('--accent-rgb', resolvedRgb);
+    card.style.setProperty('--accent2-rgb', resolvedRgb2);
   };
   const numberFormatters = new Map();
   const numberFormatter = (locale, minimumFractionDigits = 0, maximumFractionDigits = minimumFractionDigits) => {
@@ -351,6 +367,29 @@
       return this.service('homeassistant', 'toggle', { entity_id:entityId });
     }
 
+    async runAction(action, fallback, entityId = this.config?.entity) {
+      if (action == null) return fallback?.();
+      const definition = typeof action === 'string' ? { action } : action;
+      const type = String(definition?.action || 'none').toLowerCase();
+      if (type === 'none') return;
+      if (type === 'toggle') return this.toggle(definition.entity || entityId);
+      if (type === 'more-info' || type === 'more_info') return moreInfo(this, definition.entity || entityId);
+      if (type === 'navigate') {
+        const path = definition.navigation_path || definition.path;
+        if (path) window.history.pushState({}, '', path);
+        return;
+      }
+      if (type === 'call-service' || type === 'call_service') {
+        const [domain, serviceName] = String(definition.service || '').split('.', 2);
+        if (!domain || !serviceName) return notify(this, `Invalid service action: ${definition.service || ''}`);
+        return this.service(domain, serviceName, {
+          ...(definition.data || definition.service_data || {}),
+          ...(definition.entity ? { entity_id:definition.entity } : {}),
+        });
+      }
+      return notify(this, `Unsupported card action: ${type}`);
+    }
+
     bindCard(card, tap, detailEntity = () => this.config?.entity) {
       if (!card) return;
       const icon = card.querySelector(':scope > .icon-shell, :scope > .avatar');
@@ -370,7 +409,6 @@
       }
       card.tabIndex = 0;
       card.setAttribute('role', 'button');
-
       card.addEventListener('pointerdown', (event) => {
         if (event.button !== 0) return;
 
@@ -380,8 +418,8 @@
         clearTimeout(this._holdTimer);
         this._holdTimer = setTimeout(() => {
           this._held = true;
-          moreInfo(this, detailEntity?.());
-        }, 650);
+          this.runAction(this.config?.hold_action, () => moreInfo(this, detailEntity?.()), detailEntity?.());
+        }, 500);
       });
 
       ['pointerup','pointercancel'].forEach((type) => {
@@ -395,7 +433,19 @@
       card.addEventListener('click', (event) => {
         if (event.target.closest('[data-control]')) return;
         if (this._held) { this._held = false; return; }
-        tap?.(event);
+        if (event.detail === 2) {
+          clearTimeout(this._clickTimer);
+          this.runAction(this.config?.double_tap_action, undefined, detailEntity?.());
+          return;
+        }
+        if (event.detail === 0) {
+          this.runAction(this.config?.tap_action, () => tap?.(event), detailEntity?.());
+          return;
+        }
+        clearTimeout(this._clickTimer);
+        this._clickTimer = setTimeout(() => {
+          this.runAction(this.config?.tap_action, () => tap?.(event), detailEntity?.());
+        }, 250);
       });
 
       card.addEventListener('keydown', (event) => {
@@ -407,7 +457,11 @@
       });
     }
 
-    disconnectedCallback() { clearTimeout(this._holdTimer); this.stopTemplates(); }
+    disconnectedCallback() {
+      clearTimeout(this._holdTimer);
+      clearTimeout(this._clickTimer);
+      this.stopTemplates();
+    }
   }
 
   class ReferenceBasicLightCard extends ReferenceCardBase {
@@ -451,7 +505,7 @@
       if (!state || !card) return;
       const isOn = active(state);
       const isAvailable = available(state);
-      setAccent(card, configuredColor(this.config, isOn ? 'active_color' : 'inactive_color', isOn ? lightColor(state) : [132,149,170]));
+      setAccent(card, configuredColor(this.config, isOn ? 'active_color' : 'inactive_color', isOn ? [255,218,120] : [132,149,170]));
       card.classList.toggle('active', isOn);
       card.classList.toggle('unavailable', !isAvailable);
       card.setAttribute('aria-pressed', String(isOn));
@@ -732,7 +786,7 @@
         configuredColor(
           this.config,
           isOn ? 'active_color' : 'inactive_color',
-          isOn ? lightColor(this.entity(this.brightnessEntityId()) || state) : [132,149,170]
+          isOn ? [255,218,120] : [132,149,170]
         )
       );
 
@@ -859,9 +913,9 @@
       const fallbackName = this.entityLabel(this.config.entity, 'Person');
       const displayName = this.name(state, fallbackName);
       const presenceColors = {
-        home: configuredColor(this.config, 'home_color', [70,223,107]),
-        zone: configuredColor(this.config, 'zone_color', [75,169,255]),
-        away: configuredColor(this.config, 'away_color', [255,73,57]),
+        home: configuredColor(this.config, 'home_color', [206,245,149]),
+        zone: configuredColor(this.config, 'zone_color', [144,191,255]),
+        away: configuredColor(this.config, 'away_color', [255,145,138]),
         unknown: configuredColor(this.config, 'unknown_color', [135,145,158]),
       };
       setAccent(card, presenceColors[presence], presenceColors[presence]);
@@ -978,7 +1032,7 @@
         ? templateBoolean(this._activeTemplateResult)
         : active(state);
       const sensorAccent = isActive
-        ? configuredColor(this.config, 'active_color', [56,169,255])
+        ? configuredColor(this.config, 'active_color', [125,221,210])
         : configuredColor(this.config, 'inactive_color', [132,149,170]);
 
       setAccent(card, sensorAccent, sensorAccent);
@@ -1392,12 +1446,12 @@
 
       const fallbackColor =
         visual === 'heating'
-          ? [255,112,67]
+          ? [255,181,129]
           : visual === 'cooling'
-            ? [75,169,255]
+            ? [144,191,255]
             : visual === 'off'
               ? [120,132,147]
-              : [108,163,220];
+              : [125,221,210];
 
       const accent = configuredColor(
         this.config,
@@ -1532,7 +1586,7 @@
     update() {
       const { card, mainIcon, name:nameEl, subtext:subtextEl } = this._els || {};
       if (!card) return;
-      const accent = configuredColor(this.config, 'color', [116,137,255]);
+      const accent = configuredColor(this.config, 'color', [239,177,255]);
       setAccent(card, accent, accent);
       mainIcon.icon = this.config.icon || ICONS.navigate;
       const name = this.config.name || 'Navigate';
@@ -1568,10 +1622,15 @@
         { name:'entity', required:true, selector:{ entity:{} } },
         { name:'name', selector:{ text:{} } },
       ];
-      if (this.kind === 'basic') return [...common, { name:'icon_on', selector:{ icon:{} } }, { name:'icon_off', selector:{ icon:{} } }, { name:'active_color', selector:{ color_rgb:{} } }];
-      if (this.kind === 'brightness') return [...common, { name:'icon_on', selector:{ icon:{} } }, { name:'icon_off', selector:{ icon:{} } }, { name:'active_color', selector:{ color_rgb:{} } }];
+      const actions = [
+        { name:'tap_action', selector:{ object:{} } },
+        { name:'double_tap_action', selector:{ object:{} } },
+        { name:'hold_action', selector:{ object:{} } },
+      ];
+      if (this.kind === 'basic') return [...common, { name:'icon_on', selector:{ icon:{} } }, { name:'icon_off', selector:{ icon:{} } }, { name:'active_color', selector:{ color_rgb:{} } }, ...actions];
+      if (this.kind === 'brightness') return [...common, { name:'icon_on', selector:{ icon:{} } }, { name:'icon_off', selector:{ icon:{} } }, { name:'active_color', selector:{ color_rgb:{} } }, ...actions];
       if (this.kind === 'person') return [...common, { name:'battery_entity', selector:{ entity:{} } }, { name:'home_color', selector:{ color_rgb:{} } }, { name:'zone_color', selector:{ color_rgb:{} } }, { name:'away_color', selector:{ color_rgb:{} } }, { name:'unknown_color', selector:{ color_rgb:{} } }];
-      if (this.kind === 'sensor') return [...common, { name:'unit', selector:{ text:{} } }, { name:'active_template', selector:{ template:{} } }, { name:'icon_active', selector:{ icon:{} } }, { name:'icon_inactive', selector:{ icon:{} } }, { name:'subicon', selector:{ icon:{} } }, { name:'active_color', selector:{ color_rgb:{} } }];
+      if (this.kind === 'sensor') return [...common, { name:'unit', selector:{ text:{} } }, { name:'active_template', selector:{ template:{} } }, { name:'icon_active', selector:{ icon:{} } }, { name:'icon_inactive', selector:{ icon:{} } }, { name:'subicon', selector:{ icon:{} } }, { name:'active_color', selector:{ color_rgb:{} } }, ...actions];
       if (this.kind === 'thermostat') return [
         { name:'entity', required:true, selector:{ entity:{ domain:'climate' } } },
         { name:'name', selector:{ text:{} } },
@@ -1604,7 +1663,7 @@
         this._form.addEventListener('value-changed', (event) => {
           event.stopPropagation();
           const next = { ...this._config, ...event.detail.value };
-          for (const key of ['name','friendly_name','subtitle','subtext','icon','icon_on','icon_off','icon_active','icon_inactive','subicon','icon_heating','icon_cooling','icon_idle','unit','battery_entity','active_template','temperature_step','navigation_path','color','active_color','inactive_color','home_color','zone_color','away_color','unknown_color','heating_color','cooling_color','idle_color','off_color']) {
+          for (const key of ['name','friendly_name','subtitle','subtext','icon','icon_on','icon_off','icon_active','icon_inactive','subicon','icon_heating','icon_cooling','icon_idle','unit','battery_entity','active_template','temperature_step','navigation_path','color','active_color','inactive_color','home_color','zone_color','away_color','unknown_color','heating_color','cooling_color','idle_color','off_color','tap_action','double_tap_action','hold_action']) {
             if (next[key] === '' || next[key] == null) delete next[key];
           }
           this._config = next;
@@ -1642,6 +1701,9 @@
         navigation_path:'Navigation path (for example /lovelace/bedroom)',
         color:'Color',
         active_color:'Active / highlight color',
+        tap_action:'Single-click action',
+        double_tap_action:'Double-click action',
+        hold_action:'Long-press action',
         home_color:'Home color',
         zone_color:'Known-place color',
         away_color:'Away color',

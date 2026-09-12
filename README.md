@@ -18,6 +18,12 @@ Glow Cards currently includes six card types:
 
 All cards can be configured through YAML and include a Home Assistant visual editor.
 
+### Interaction actions
+
+The light, dimmable-light, and sensor cards support Home Assistant-style
+`tap_action`, `double_tap_action`, and `hold_action` overrides. Supported actions
+include `toggle`, `more-info`, `navigate`, `call-service`, and `none`.
+
 ---
 
 ## Installation
